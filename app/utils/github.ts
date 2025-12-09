@@ -185,8 +185,8 @@ export async function listNewsletters(): Promise<NewsletterMetadata[]> {
     });
   }
 
-  // Sort by date, newest first
-  newsletters.sort((a, b) => b.date.getTime() - a.date.getTime());
+  // Sort by number, descending (highest number first)
+  newsletters.sort((a, b) => b.number - a.number);
 
   return newsletters;
 }
