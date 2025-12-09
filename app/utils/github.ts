@@ -1,6 +1,7 @@
 import * as os from "node:os";
 import * as path from "node:path";
 import { z } from "zod";
+import { parseTar, type TarEntry } from "@remix-run/tar-parser";
 import { detectMimeType } from "@remix-run/mime";
 import { type LazyContent, LazyFile } from "@remix-run/lazy-file";
 import { createFsFileStorage } from "@remix-run/file-storage/fs";
@@ -51,6 +52,134 @@ const GitHubFileContentsSchema = GitHubContentsItemSchema.extend({
 });
 
 type GitHubContentsItem = z.infer<typeof GitHubContentsItemSchema>;
+
+interface TarEntryData {
+  name: string;
+  size: number;
+}
+
+/**
+ * Fetches the repository as a tarball and extracts newsletter metadata.
+ * This is more efficient than making multiple API calls for listing newsletters.
+ */
+async function fetchNewslettersFromTarball(
+  owner: string,
+  repo: string,
+  token: string,
+  ref: string = "main",
+): Promise<NewsletterMetadata[]> {
+  const tarballUrl = `https://api.github.com/repos/${owner}/${repo}/tarball/${ref}`;
+  const response = await fetch(tarballUrl, {
+    headers: {
+      Authorization: `token ${token}`,
+      Accept: "application/vnd.github.v3.raw",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch repository tarball: ${response.status} ${response.statusText}`,
+    );
+  }
+
+  if (!response.body) {
+    throw new Error("Response body is null");
+  }
+
+  // Parse the tarball stream
+  const entries = new Map<string, TarEntryData>();
+  const stream = response.body.pipeThrough(new DecompressionStream("gzip"));
+
+  await parseTar(stream, async (entry: TarEntry) => {
+    // Only process files in the newsletters directory
+    if (!entry.name.includes("newsletters/")) {
+      return;
+    }
+
+    // Skip directories (they end with /)
+    if (entry.name.endsWith("/")) {
+      return;
+    }
+
+    // For metadata extraction, we only need the filename and size
+    // We don't need to read the content for listing newsletters
+    entries.set(entry.name, {
+      name: entry.name,
+      size: entry.size,
+    });
+  });
+
+  // Extract newsletter metadata from parsed entries
+  const newsletters: NewsletterMetadata[] = [];
+  const newsletterDirs = new Map<string, Map<string, TarEntryData>>();
+
+  // Group entries by newsletter directory
+  for (const [path, entry] of entries.entries()) {
+    // Extract directory name: {repo}-{ref}/newsletters/newsletter-{n}/filename
+    const match = path.match(/[^/]+\/newsletters\/(newsletter-\d+)\/(.+)$/);
+    if (!match) {
+      continue;
+    }
+
+    const [, dirName, filename] = match;
+    if (!newsletterDirs.has(dirName)) {
+      newsletterDirs.set(dirName, new Map());
+    }
+    newsletterDirs.get(dirName)!.set(filename, entry);
+  }
+
+  // Process each newsletter directory
+  for (const [dirName, files] of newsletterDirs.entries()) {
+    // Find the markdown file
+    const markdownFile = Array.from(files.entries()).find(([name]) =>
+      name.endsWith(".md"),
+    );
+
+    if (!markdownFile) {
+      continue;
+    }
+
+    const [filename] = markdownFile;
+
+    // Parse newsletter number from directory name
+    const dirMatch = dirName.match(/^newsletter-(\d+)$/);
+    if (!dirMatch) {
+      continue;
+    }
+
+    const number = parseInt(dirMatch[1], 10);
+
+    // Parse date from filename
+    const filenameMatch = filename.match(
+      /^(\d{4})-(\d{2})-(\d{2})-remix-newsletter-\d+\.md$/,
+    );
+    if (!filenameMatch) {
+      continue;
+    }
+
+    const [, year, month, day] = filenameMatch;
+    const date = new Date(
+      parseInt(year, 10),
+      parseInt(month, 10) - 1,
+      parseInt(day, 10),
+    );
+
+    // Extract the path relative to repo root
+    const path = `newsletters/${dirName}/${filename}`;
+
+    newsletters.push({
+      number,
+      date,
+      path,
+      filename,
+    });
+  }
+
+  // Sort by number, descending (highest number first)
+  newsletters.sort((a, b) => b.number - a.number);
+
+  return newsletters;
+}
 
 async function fetchGitHubContentsArray(
   owner: string,
@@ -120,75 +249,87 @@ export async function listNewsletters(): Promise<NewsletterMetadata[]> {
     throw new Error("GITHUB_TOKEN environment variable is required");
   }
 
-  let contents = await fetchGitHubContentsArray(
-    owner,
-    repo,
-    "newsletters",
-    token,
-  );
+  // Try using tarball API first (more efficient - single request)
+  // Fall back to Contents API if tarball fails
+  try {
+    return await fetchNewslettersFromTarball(owner, repo, token);
+  } catch (error) {
+    console.warn(
+      "Failed to fetch newsletters from tarball, falling back to Contents API:",
+      error,
+    );
 
-  let newsletterDirs = contents.filter(
-    (item) => item.type === "dir" && item.name.startsWith("newsletter-"),
-  );
+    // Fallback to the original Contents API approach
+    let contents = await fetchGitHubContentsArray(
+      owner,
+      repo,
+      "newsletters",
+      token,
+    );
 
-  let newsletters: NewsletterMetadata[] = [];
+    let newsletterDirs = contents.filter(
+      (item) => item.type === "dir" && item.name.startsWith("newsletter-"),
+    );
 
-  for (let dir of newsletterDirs) {
-    let dirContents: GitHubContentsItem[];
-    try {
-      dirContents = await fetchGitHubContentsArray(
-        owner,
-        repo,
-        dir.path,
-        token,
+    let newsletters: NewsletterMetadata[] = [];
+
+    for (let dir of newsletterDirs) {
+      let dirContents: GitHubContentsItem[];
+      try {
+        dirContents = await fetchGitHubContentsArray(
+          owner,
+          repo,
+          dir.path,
+          token,
+        );
+      } catch {
+        continue;
+      }
+
+      let markdownFile = dirContents.find(
+        (item) => item.type === "file" && item.name.endsWith(".md"),
       );
-    } catch {
-      continue;
+
+      if (!markdownFile) {
+        continue;
+      }
+
+      // Parse newsletter number from directory name: newsletter-:n
+      let dirMatch = dir.name.match(/^newsletter-(\d+)$/);
+      if (!dirMatch) {
+        continue;
+      }
+
+      let number = parseInt(dirMatch[1], 10);
+
+      // Parse date from filename: :yyyy-:mm-:dd-remix-newsletter-:n.md
+      let filenameMatch = markdownFile.name.match(
+        /^(\d{4})-(\d{2})-(\d{2})-remix-newsletter-\d+\.md$/,
+      );
+      if (!filenameMatch) {
+        continue;
+      }
+
+      let [, year, month, day] = filenameMatch;
+      let date = new Date(
+        parseInt(year, 10),
+        parseInt(month, 10) - 1,
+        parseInt(day, 10),
+      );
+
+      newsletters.push({
+        number,
+        date,
+        path: markdownFile.path,
+        filename: markdownFile.name,
+      });
     }
 
-    let markdownFile = dirContents.find(
-      (item) => item.type === "file" && item.name.endsWith(".md"),
-    );
+    // Sort by number, descending (highest number first)
+    newsletters.sort((a, b) => b.number - a.number);
 
-    if (!markdownFile) {
-      continue;
-    }
-
-    // Parse newsletter number from directory name: newsletter-:n
-    let dirMatch = dir.name.match(/^newsletter-(\d+)$/);
-    if (!dirMatch) {
-      continue;
-    }
-
-    let number = parseInt(dirMatch[1], 10);
-
-    // Parse date from filename: :yyyy-:mm-:dd-remix-newsletter-:n.md
-    let filenameMatch = markdownFile.name.match(
-      /^(\d{4})-(\d{2})-(\d{2})-remix-newsletter-\d+\.md$/,
-    );
-    if (!filenameMatch) {
-      continue;
-    }
-
-    let [, year, month, day] = filenameMatch;
-    let date = new Date(
-      parseInt(year, 10),
-      parseInt(month, 10) - 1,
-      parseInt(day, 10),
-    );
-
-    newsletters.push({
-      number,
-      date,
-      path: markdownFile.path,
-      filename: markdownFile.name,
-    });
+    return newsletters;
   }
-
-  // Sort by number, descending (highest number first)
-  newsletters.sort((a, b) => b.number - a.number);
-
-  return newsletters;
 }
 
 export async function fetchNewsletter(number: number): Promise<string> {
