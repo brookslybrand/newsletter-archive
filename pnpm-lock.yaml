@@ -13,7 +13,7 @@ importers:
         version: 8.4.1
       '@remix-run/compression-middleware':
         specifier: ^0.1.0
-        version: 0.1.0(@remix-run/fetch-router@0.12.0(@remix-run/route-pattern@0.15.3)(@remix-run/session@0.4.1))(@remix-run/mime@0.1.0)(@remix-run/response@0.2.0(@remix-run/html-template@0.3.0)(@remix-run/mime@0.1.0))
+        version: 0.1.0(@remix-run/fetch-router@0.12.0(@remix-run/headers@0.18.0)(@remix-run/route-pattern@0.15.3)(@remix-run/session@0.4.1))(@remix-run/mime@0.1.0)(@remix-run/response@0.2.0(@remix-run/headers@0.18.0)(@remix-run/html-template@0.3.0)(@remix-run/mime@0.1.0))
       '@remix-run/dom':
         specifier: ^0.0.0-experimental-remix-jam.6
         version: 0.0.0-experimental-remix-jam.6
@@ -22,10 +22,16 @@ importers:
         version: 0.0.0-experimental-remix-jam.5
       '@remix-run/fetch-router':
         specifier: ^0.12.0
-        version: 0.12.0(@remix-run/route-pattern@0.15.3)(@remix-run/session@0.4.1)
+        version: 0.12.0(@remix-run/headers@0.18.0)(@remix-run/route-pattern@0.15.3)(@remix-run/session@0.4.1)
       '@remix-run/file-storage':
         specifier: ^0.13.0
-        version: 0.13.0(@remix-run/lazy-file@4.2.0(@remix-run/mime@0.1.0))
+        version: 0.13.0(@remix-run/fs@0.3.0(@remix-run/lazy-file@4.2.0(@remix-run/mime@0.1.0))(@remix-run/mime@0.1.0))(@remix-run/lazy-file@4.2.0(@remix-run/mime@0.1.0))
+      '@remix-run/fs':
+        specifier: ^0.3.0
+        version: 0.3.0(@remix-run/lazy-file@4.2.0(@remix-run/mime@0.1.0))(@remix-run/mime@0.1.0)
+      '@remix-run/headers':
+        specifier: ^0.18.0
+        version: 0.18.0
       '@remix-run/html-template':
         specifier: ^0.3.0
         version: 0.3.0
@@ -34,7 +40,7 @@ importers:
         version: 4.2.0(@remix-run/mime@0.1.0)
       '@remix-run/logger-middleware':
         specifier: ^0.1.0
-        version: 0.1.0(@remix-run/fetch-router@0.12.0(@remix-run/route-pattern@0.15.3)(@remix-run/session@0.4.1))
+        version: 0.1.0(@remix-run/fetch-router@0.12.0(@remix-run/headers@0.18.0)(@remix-run/route-pattern@0.15.3)(@remix-run/session@0.4.1))
       '@remix-run/mime':
         specifier: ^0.1.0
         version: 0.1.0
@@ -43,10 +49,10 @@ importers:
         version: 0.12.0
       '@remix-run/response':
         specifier: ^0.2.0
-        version: 0.2.0(@remix-run/html-template@0.3.0)(@remix-run/mime@0.1.0)
+        version: 0.2.0(@remix-run/headers@0.18.0)(@remix-run/html-template@0.3.0)(@remix-run/mime@0.1.0)
       '@remix-run/static-middleware':
         specifier: ^0.4.0
-        version: 0.4.0(@remix-run/fetch-router@0.12.0(@remix-run/route-pattern@0.15.3)(@remix-run/session@0.4.1))(@remix-run/html-template@0.3.0)(@remix-run/mime@0.1.0)(@remix-run/response@0.2.0(@remix-run/html-template@0.3.0)(@remix-run/mime@0.1.0))
+        version: 0.4.0(@remix-run/fetch-router@0.12.0(@remix-run/headers@0.18.0)(@remix-run/route-pattern@0.15.3)(@remix-run/session@0.4.1))(@remix-run/fs@0.3.0(@remix-run/lazy-file@4.2.0(@remix-run/mime@0.1.0))(@remix-run/mime@0.1.0))(@remix-run/html-template@0.3.0)(@remix-run/mime@0.1.0)(@remix-run/response@0.2.0(@remix-run/headers@0.18.0)(@remix-run/html-template@0.3.0)(@remix-run/mime@0.1.0))
       marked:
         specifier: ^14.0.0
         version: 14.1.4
@@ -425,6 +431,15 @@ packages:
       '@remix-run/fs': ^0.1.0
       '@remix-run/lazy-file': ^4.0.0
 
+  '@remix-run/fs@0.3.0':
+    resolution: {integrity: sha512-gf9OF3fNArNSdk/2m7mh5JLk61ynXz4cAMKgsPDL8eo+o3Ve9j8nir/vv2x9kqmE0FyFlCxKF1+aMITJkJ6Bqg==}
+    peerDependencies:
+      '@remix-run/lazy-file': ^4.2.0
+      '@remix-run/mime': ^0.1.0
+
+  '@remix-run/headers@0.18.0':
+    resolution: {integrity: sha512-5V/doLOF1IBuMhV+USa/ImUzpql4SQ0VBbNKbRHvrwRK59GYGVqtcwpVzgdFb5QEa2vIedq4JdOy7FIesZUpIw==}
+
   '@remix-run/html-template@0.3.0':
     resolution: {integrity: sha512-aAMx68udtIk0fmCpCXHYscVeCDsRVEmEgh4XvtusPr3vkHu3jn4gx5oAxgsPXPdDmmD/d75SYyI0m/F+aLz5iQ==}
 
@@ -743,11 +758,11 @@ snapshots:
     dependencies:
       '@octokit/openapi-types': 24.2.0
 
-  '@remix-run/compression-middleware@0.1.0(@remix-run/fetch-router@0.12.0(@remix-run/route-pattern@0.15.3)(@remix-run/session@0.4.1))(@remix-run/mime@0.1.0)(@remix-run/response@0.2.0(@remix-run/html-template@0.3.0)(@remix-run/mime@0.1.0))':
+  '@remix-run/compression-middleware@0.1.0(@remix-run/fetch-router@0.12.0(@remix-run/headers@0.18.0)(@remix-run/route-pattern@0.15.3)(@remix-run/session@0.4.1))(@remix-run/mime@0.1.0)(@remix-run/response@0.2.0(@remix-run/headers@0.18.0)(@remix-run/html-template@0.3.0)(@remix-run/mime@0.1.0))':
     dependencies:
-      '@remix-run/fetch-router': 0.12.0(@remix-run/route-pattern@0.15.3)(@remix-run/session@0.4.1)
+      '@remix-run/fetch-router': 0.12.0(@remix-run/headers@0.18.0)(@remix-run/route-pattern@0.15.3)(@remix-run/session@0.4.1)
       '@remix-run/mime': 0.1.0
-      '@remix-run/response': 0.2.0(@remix-run/html-template@0.3.0)(@remix-run/mime@0.1.0)
+      '@remix-run/response': 0.2.0(@remix-run/headers@0.18.0)(@remix-run/html-template@0.3.0)(@remix-run/mime@0.1.0)
 
   '@remix-run/dom@0.0.0-experimental-remix-jam.6':
     dependencies:
@@ -756,14 +771,23 @@ snapshots:
 
   '@remix-run/events@0.0.0-experimental-remix-jam.5': {}
 
-  '@remix-run/fetch-router@0.12.0(@remix-run/route-pattern@0.15.3)(@remix-run/session@0.4.1)':
+  '@remix-run/fetch-router@0.12.0(@remix-run/headers@0.18.0)(@remix-run/route-pattern@0.15.3)(@remix-run/session@0.4.1)':
     dependencies:
+      '@remix-run/headers': 0.18.0
       '@remix-run/route-pattern': 0.15.3
       '@remix-run/session': 0.4.1
 
-  '@remix-run/file-storage@0.13.0(@remix-run/lazy-file@4.2.0(@remix-run/mime@0.1.0))':
+  '@remix-run/file-storage@0.13.0(@remix-run/fs@0.3.0(@remix-run/lazy-file@4.2.0(@remix-run/mime@0.1.0))(@remix-run/mime@0.1.0))(@remix-run/lazy-file@4.2.0(@remix-run/mime@0.1.0))':
+    dependencies:
+      '@remix-run/fs': 0.3.0(@remix-run/lazy-file@4.2.0(@remix-run/mime@0.1.0))(@remix-run/mime@0.1.0)
+      '@remix-run/lazy-file': 4.2.0(@remix-run/mime@0.1.0)
+
+  '@remix-run/fs@0.3.0(@remix-run/lazy-file@4.2.0(@remix-run/mime@0.1.0))(@remix-run/mime@0.1.0)':
     dependencies:
       '@remix-run/lazy-file': 4.2.0(@remix-run/mime@0.1.0)
+      '@remix-run/mime': 0.1.0
+
+  '@remix-run/headers@0.18.0': {}
 
   '@remix-run/html-template@0.3.0': {}
 
@@ -771,16 +795,17 @@ snapshots:
     dependencies:
       '@remix-run/mime': 0.1.0
 
-  '@remix-run/logger-middleware@0.1.0(@remix-run/fetch-router@0.12.0(@remix-run/route-pattern@0.15.3)(@remix-run/session@0.4.1))':
+  '@remix-run/logger-middleware@0.1.0(@remix-run/fetch-router@0.12.0(@remix-run/headers@0.18.0)(@remix-run/route-pattern@0.15.3)(@remix-run/session@0.4.1))':
     dependencies:
-      '@remix-run/fetch-router': 0.12.0(@remix-run/route-pattern@0.15.3)(@remix-run/session@0.4.1)
+      '@remix-run/fetch-router': 0.12.0(@remix-run/headers@0.18.0)(@remix-run/route-pattern@0.15.3)(@remix-run/session@0.4.1)
 
   '@remix-run/mime@0.1.0': {}
 
   '@remix-run/node-fetch-server@0.12.0': {}
 
-  '@remix-run/response@0.2.0(@remix-run/html-template@0.3.0)(@remix-run/mime@0.1.0)':
+  '@remix-run/response@0.2.0(@remix-run/headers@0.18.0)(@remix-run/html-template@0.3.0)(@remix-run/mime@0.1.0)':
     dependencies:
+      '@remix-run/headers': 0.18.0
       '@remix-run/html-template': 0.3.0
       '@remix-run/mime': 0.1.0
 
@@ -788,12 +813,13 @@ snapshots:
 
   '@remix-run/session@0.4.1': {}
 
-  '@remix-run/static-middleware@0.4.0(@remix-run/fetch-router@0.12.0(@remix-run/route-pattern@0.15.3)(@remix-run/session@0.4.1))(@remix-run/html-template@0.3.0)(@remix-run/mime@0.1.0)(@remix-run/response@0.2.0(@remix-run/html-template@0.3.0)(@remix-run/mime@0.1.0))':
+  '@remix-run/static-middleware@0.4.0(@remix-run/fetch-router@0.12.0(@remix-run/headers@0.18.0)(@remix-run/route-pattern@0.15.3)(@remix-run/session@0.4.1))(@remix-run/fs@0.3.0(@remix-run/lazy-file@4.2.0(@remix-run/mime@0.1.0))(@remix-run/mime@0.1.0))(@remix-run/html-template@0.3.0)(@remix-run/mime@0.1.0)(@remix-run/response@0.2.0(@remix-run/headers@0.18.0)(@remix-run/html-template@0.3.0)(@remix-run/mime@0.1.0))':
     dependencies:
-      '@remix-run/fetch-router': 0.12.0(@remix-run/route-pattern@0.15.3)(@remix-run/session@0.4.1)
+      '@remix-run/fetch-router': 0.12.0(@remix-run/headers@0.18.0)(@remix-run/route-pattern@0.15.3)(@remix-run/session@0.4.1)
+      '@remix-run/fs': 0.3.0(@remix-run/lazy-file@4.2.0(@remix-run/mime@0.1.0))(@remix-run/mime@0.1.0)
       '@remix-run/html-template': 0.3.0
       '@remix-run/mime': 0.1.0
-      '@remix-run/response': 0.2.0(@remix-run/html-template@0.3.0)(@remix-run/mime@0.1.0)
+      '@remix-run/response': 0.2.0(@remix-run/headers@0.18.0)(@remix-run/html-template@0.3.0)(@remix-run/mime@0.1.0)
 
   '@remix-run/style@0.0.0-experimental-remix-jam.5': {}
 

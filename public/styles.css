@@ -1,0 +1,156 @@
+@layer reset {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  line-height: 1.6;
+  color: #333;
+  background: #f5f5f5;
+}
+
+a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+header {
+  margin-bottom: 2rem;
+}
+
+h1 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  color: #222;
+}
+
+.newsletter-list {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.newsletter-item {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #eee;
+}
+
+.newsletter-item:last-child {
+  border-bottom: none;
+}
+
+.newsletter-item:hover {
+  background: #f8f9fa;
+}
+
+.newsletter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+
+.newsletter-number {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.newsletter-date {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.newsletter-content {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+}
+
+.newsletter-content h1,
+.newsletter-content h2,
+.newsletter-content h3 {
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.newsletter-content h1 {
+  font-size: 2rem;
+}
+
+.newsletter-content h2 {
+  font-size: 1.5rem;
+}
+
+.newsletter-content h3 {
+  font-size: 1.25rem;
+}
+
+.newsletter-content p {
+  margin-bottom: 1rem;
+}
+
+.newsletter-content ul,
+.newsletter-content ol {
+  margin-bottom: 1rem;
+  padding-left: 2rem;
+}
+
+.newsletter-content li {
+  margin-bottom: 0.5rem;
+}
+
+.newsletter-content code {
+  background: #f5f5f5;
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+.newsletter-content pre {
+  background: #f5f5f5;
+  padding: 1rem;
+  border-radius: 4px;
+  overflow-x: auto;
+  margin-bottom: 1rem;
+}
+
+.newsletter-content pre code {
+  background: none;
+  padding: 0;
+}
+
+.newsletter-content img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1.5rem 0;
+  border-radius: 4px;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 1rem;
+  color: #666;
+}
+
+.back-link:hover {
+  color: #007bff;
+}
+
