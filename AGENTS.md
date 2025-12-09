@@ -133,8 +133,9 @@ Located in `app/utils/markdown.ts`:
 
 ### Other Dependencies
 
-- `@octokit/request` - GitHub API client
+- `@remix-run/tar-parser` - Tar archive parser (for potential GitHub tarball support)
 - `marked` - Markdown parser
+- `zod` - Schema validation for GitHub API responses
 - `dotenv` - Environment variable loading
 
 ### Development Dependencies
@@ -229,9 +230,10 @@ Remix 3 middleware packages can be composed:
 
 ### Fetching Data
 
-- Use GitHub API via `@octokit/request`
+- Use GitHub API via native `fetch()` API
 - Cache images using `@remix-run/file-storage`
 - Use `LazyFile` for streaming large files
+- `@remix-run/tar-parser` is available for parsing GitHub tarball archives if needed
 
 ## Notes for AI Agents
 

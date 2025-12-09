@@ -97,7 +97,7 @@ function renderNewsletterPage(content: SafeHtml, backHref: string): Response {
 }
 
 router.map(pageRoutes, {
-  async home(context) {
+  async home() {
     try {
       let newsletters = await listNewsletters();
 
