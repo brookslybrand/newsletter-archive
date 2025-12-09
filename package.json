@@ -5,8 +5,6 @@
   "dependencies": {
     "@octokit/request": "^8.0.0",
     "@remix-run/compression-middleware": "^0.1.0",
-    "@remix-run/dom": "^0.0.0-experimental-remix-jam.6",
-    "@remix-run/events": "^0.0.0-experimental-remix-jam.5",
     "@remix-run/fetch-router": "^0.12.0",
     "@remix-run/file-storage": "^0.13.0",
     "@remix-run/fs": "^0.3.0",
@@ -22,17 +20,13 @@
   },
   "devDependencies": {
     "@types/node": "^24.10.2",
-    "@typescript/native-preview": "^7.0.0-dev.20251209.1",
     "dotenv": "^16.4.5",
-    "esbuild": "^0.25.10",
     "tsx": "^4.21.0"
   },
   "scripts": {
-    "dev": "pnpm run --filter \".\" --parallel \"/^dev:/\"",
-    "dev:server": "NODE_ENV=development tsx watch server.ts",
-    "dev:browser": "esbuild app/assets/*.tsx --outbase=app/assets --outdir=public/assets --bundle --minify --splitting --format=esm --entry-names='[dir]/[name]' --chunk-names='chunks/[name]-[hash]' --sourcemap --watch",
+    "dev": "NODE_ENV=development tsx watch server.ts",
     "start": "tsx server.ts",
     "test": "tsx --test",
-    "typecheck": "tsgo --noEmit"
+    "typecheck": "tsc --noEmit"
   }
 }

@@ -36,10 +36,11 @@ For development with hot reloading:
 pnpm dev
 ```
 
-This runs both the server (with watch mode) and the browser asset bundler in parallel.
+This runs the server with watch mode for automatic reloading on file changes.
 
 ## Environment Variables
 
 - `GITHUB_TOKEN` (required) - GitHub Personal Access Token for API authentication
 - `GITHUB_OWNER` (optional) - Repository owner, defaults to `remix-run`
 - `GITHUB_REPO` (optional) - Repository name, defaults to `newsletter`
+- `PORT` (optional) - Server port, defaults to `44100`
