@@ -25,7 +25,6 @@ This is a **Newsletter Archive** application that fetches newsletters from a Git
 2. **Modular Packages**: Remix 3 is distributed as many small, composable packages:
 
    - `@remix-run/fetch-router` - Router for the web Fetch API
-   - `@remix-run/node-fetch-server` - Server adapter for Node.js
    - `@remix-run/html-template` - HTML template utilities
    - `@remix-run/response` - Response utilities (HTML, file, etc.)
    - `@remix-run/lazy-file` - Lazy, streaming file handling
@@ -76,7 +75,7 @@ newsletter-archive/
 ### Server Setup
 
 - Uses Node.js HTTP server (`node:http`)
-- Uses `@remix-run/node-fetch-server` to create a request listener
+- Converts Node.js HTTP requests to Web Fetch API Request objects
 - Router is imported from `./app/router.ts`
 - Default port: `44100` (configurable via `PORT` env var)
 - Uses `tsx` to run TypeScript directly (no compilation step)
@@ -121,7 +120,6 @@ Located in `app/utils/markdown.ts`:
 ### Core Remix 3 Packages
 
 - `@remix-run/fetch-router` - Router implementation
-- `@remix-run/node-fetch-server` - Node.js server adapter
 - `@remix-run/html-template` - HTML template utilities (used for generating HTML)
 - `@remix-run/response` - Response utilities (HTML, file responses)
 - `@remix-run/lazy-file` - Lazy file streaming
@@ -148,10 +146,10 @@ Located in `app/utils/markdown.ts`:
 
 ### Scripts
 
-- `pnpm start` - Start production server
-- `pnpm dev` - Start development server with watch mode (auto-reloads on file changes)
-- `pnpm test` - Run tests
-- `pnpm typecheck` - Type check without emitting
+- `bun start` - Start production server
+- `bun dev` - Start development server with watch mode (auto-reloads on file changes)
+- `bun test` - Run tests
+- `bun typecheck` - Type check without emitting
 
 ### HTML Generation
 
@@ -246,6 +244,7 @@ Remix 3 middleware packages can be composed:
 7. **TypeScript native** - Server code runs directly with `tsx`, no compilation step
 8. **Modular design** - Each Remix package is independent and composable
 9. **Router file** - The router is in `app/router.ts` (not `.tsx` - no JSX)
+10. **No type casting** - Never use TypeScript type assertions (`as`, `as!`, `as?`, `satisfies`). Instead, use proper type guards, type narrowing, or fix the underlying type issues. Type casting bypasses TypeScript's safety and can lead to runtime errors.
 
 ## References
 

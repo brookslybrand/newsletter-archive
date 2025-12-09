@@ -13,13 +13,13 @@
     "@remix-run/lazy-file": "^4.2.0",
     "@remix-run/logger-middleware": "^0.1.0",
     "@remix-run/mime": "^0.1.0",
-    "@remix-run/node-fetch-server": "^0.12.0",
     "@remix-run/response": "^0.2.0",
     "@remix-run/static-middleware": "^0.4.0",
     "marked": "^14.0.0"
   },
   "devDependencies": {
     "@types/node": "^24.10.2",
+    "@typescript/native-preview": "7.0.0-dev.20251209.1",
     "dotenv": "^16.4.5",
     "tsx": "^4.21.0"
   },
@@ -27,6 +27,6 @@
     "dev": "NODE_ENV=development tsx watch server.ts",
     "start": "tsx server.ts",
     "test": "tsx --test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsgo --noEmit"
   }
 }

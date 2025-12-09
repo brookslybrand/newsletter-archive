@@ -22,8 +22,8 @@ GITHUB_REPO=newsletter
 2. Install dependencies and start the server:
 
 ```bash
-pnpm install
-pnpm start
+bun install
+bun start
 ```
 
 Then visit http://localhost:44100
@@ -33,7 +33,7 @@ Then visit http://localhost:44100
 For development with hot reloading:
 
 ```bash
-pnpm dev
+bun dev
 ```
 
 This runs the server with watch mode for automatic reloading on file changes.
