@@ -1,7 +1,7 @@
 import { marked } from "marked";
 
 export function markdownToHtml(markdown: string): string {
-  const result = marked.parse(markdown);
+  let result = marked.parse(markdown);
   // marked.parse returns string when called synchronously
   if (typeof result === "string") {
     return result;
