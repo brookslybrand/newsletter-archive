@@ -35,6 +35,9 @@ importers:
       '@remix-run/mime':
         specifier: ^0.1.0
         version: 0.1.0
+      '@remix-run/node-fetch-server':
+        specifier: ^0.12.0
+        version: 0.12.0
       '@remix-run/response':
         specifier: ^0.2.0
         version: 0.2.0(@remix-run/headers@0.18.0)(@remix-run/html-template@0.3.0)(@remix-run/mime@0.1.0)
@@ -107,6 +110,9 @@ packages:
 
   '@remix-run/mime@0.1.0':
     resolution: {integrity: sha512-SUuIhuzaFdPPF8hPJ2qneILnP3Nxc96jvuz6QAhXDeqenXsCNUdduF+6J2PILdzme0t3dVZcHARfcgYPTaOWdg==}
+
+  '@remix-run/node-fetch-server@0.12.0':
+    resolution: {integrity: sha512-oeg8w8aJJSuq1fCx85jCkcgTfI6On7sKwWVSO4/OW5AvTBuosAIwnuBd/LYeU/I7lYPOTW2NXhUfyfpyeexs4w==}
 
   '@remix-run/response@0.2.0':
     resolution: {integrity: sha512-oo5LA6On7OO2uJxjjYOsvEHvc5MnBdQavZoiuT2a9HiwKRNpc8Y3D85oqHjtJJBNtgg+Ug1JN3H0RILezpAYTg==}
@@ -227,6 +233,8 @@ snapshots:
       '@remix-run/fetch-router': 0.12.0(@remix-run/headers@0.18.0)(@remix-run/route-pattern@0.15.3)(@remix-run/session@0.4.1)
 
   '@remix-run/mime@0.1.0': {}
+
+  '@remix-run/node-fetch-server@0.12.0': {}
 
   '@remix-run/response@0.2.0(@remix-run/headers@0.18.0)(@remix-run/html-template@0.3.0)(@remix-run/mime@0.1.0)':
     dependencies:

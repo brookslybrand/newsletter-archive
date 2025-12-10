@@ -8,7 +8,10 @@ import {
   listNewsletters,
   fetchNewsletter,
   fetchNewsletterImage,
+  NewsletterNotFoundError,
+  ImageNotFoundError,
 } from "./utils/github.ts";
+import { cache } from "./utils/cache.ts";
 import { markdownToHtml } from "./utils/markdown.ts";
 import { html, type SafeHtml } from "@remix-run/html-template";
 import { createHtmlResponse } from "@remix-run/response/html";
@@ -31,7 +34,7 @@ middleware.push(
 
 export let router = createRouter({ middleware });
 
-let { assets, ...pageRoutes } = routes;
+let { assets: _unused, ...pageRoutes } = routes;
 
 function transformImageUrls(
   htmlContent: string,
@@ -91,7 +94,7 @@ function renderNewsletterPage(content: SafeHtml, backHref: string): Response {
   `;
   return createHtmlResponse(page, {
     headers: {
-      "Cache-Control": "public, max-age=3600, immutable",
+      "Cache-Control": `public, max-age=${cache.TTL_SECONDS}, stale-while-revalidate=${cache.STALE_WHILE_REVALIDATE_SECONDS}`,
     },
   });
 }
@@ -145,7 +148,7 @@ router.map(pageRoutes, {
 
       return renderLayout(content, {
         headers: {
-          "Cache-Control": "public, max-age=3600, must-revalidate",
+          "Cache-Control": `public, max-age=${cache.TTL_SECONDS}, stale-while-revalidate=${cache.STALE_WHILE_REVALIDATE_SECONDS}`,
         },
       });
     } catch (error) {
@@ -220,37 +223,23 @@ router.map(pageRoutes, {
       return renderNewsletterPage(safeHtml, routes.home.href());
     } catch (error) {
       console.error(`Error fetching newsletter ${number}:`, error);
-      let status = 404;
-      let message = "Newsletter not found.";
 
-      if (error instanceof Error) {
-        if (error.message.includes("GITHUB_TOKEN")) {
-          status = 500;
-          message =
-            "GitHub authentication error. Make sure GITHUB_TOKEN is set.";
-        } else if (error.message.includes("not found")) {
-          status = 404;
-          message = `Newsletter ${number} not found.`;
-        } else {
-          message = error.message;
-        }
+      if (error instanceof NewsletterNotFoundError) {
+        let content = html`
+          <a href="${routes.home.href()}" class="back-link">
+            ← Back to archive
+          </a>
+          <div class="newsletter-content">
+            <p>Newsletter ${error.number} not found.</p>
+          </div>
+        `;
+        return renderLayout(content, {
+          status: 404,
+          headers: { "Cache-Control": "no-store" },
+        });
       }
 
-      let content = html`
-        <a href="${routes.home.href()}" class="back-link">
-          ← Back to archive
-        </a>
-        <div class="newsletter-content">
-          <p>${message}</p>
-        </div>
-      `;
-
-      return renderLayout(content, {
-        status,
-        headers: {
-          "Cache-Control": "no-store",
-        },
-      });
+      throw error;
     }
   },
 
@@ -272,30 +261,22 @@ router.map(pageRoutes, {
     try {
       let file = await fetchNewsletterImage(number, filename);
       return createFileResponse(file, context.request, {
-        cacheControl: "public, max-age=31536000",
+        cacheControl: `public, max-age=${cache.TTL_SECONDS}, stale-while-revalidate=${cache.STALE_WHILE_REVALIDATE_SECONDS}`,
       });
     } catch (error) {
       console.error(
         `Error fetching image ${filename} for newsletter ${number}:`,
         error,
       );
-      let status = 404;
-      let message = "Image not found.";
 
-      if (error instanceof Error) {
-        if (error.message.includes("GITHUB_TOKEN")) {
-          status = 500;
-          message =
-            "GitHub authentication error. Make sure GITHUB_TOKEN is set.";
-        } else if (error.message.includes("not found")) {
-          status = 404;
-          message = `Image ${filename} not found for newsletter ${number}.`;
-        } else {
-          message = error.message;
-        }
+      if (error instanceof ImageNotFoundError) {
+        return new Response(
+          `Image "${error.filename}" not found in newsletter ${error.newsletterNumber}.`,
+          { status: 404 },
+        );
       }
 
-      return new Response(message, { status });
+      throw error;
     }
   },
 });

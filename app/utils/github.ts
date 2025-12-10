@@ -1,17 +1,14 @@
 import * as os from "node:os";
 import * as path from "node:path";
-import { z } from "zod";
+import * as zlib from "node:zlib";
 import { parseTar, type TarEntry } from "@remix-run/tar-parser";
 import { detectMimeType } from "@remix-run/mime";
-import { type LazyContent, LazyFile } from "@remix-run/lazy-file";
 import { createFsFileStorage } from "@remix-run/file-storage/fs";
+import { cache } from "./cache.ts";
 
 let cacheDir = path.join(os.tmpdir(), "newsletter-archive-cache");
-let imageCache = createFsFileStorage(cacheDir);
-
-function getImageCacheKey(number: number, filename: string): string {
-  return `newsletter-${number}/${filename}`;
-}
+let tarballCache = createFsFileStorage(cacheDir);
+let isDev = process.env.NODE_ENV === "development";
 
 function getConfig() {
   return {
@@ -21,55 +18,47 @@ function getConfig() {
   };
 }
 
-// Zod schemas for GitHub API responses
-const GitHubContentsLinksSchema = z.object({
-  self: z.string(),
-  git: z.string().nullable(),
-  html: z.string().nullable(),
-});
+function getTarballCacheKey(owner: string, repo: string, ref: string): string {
+  return `${owner}-${repo}-${ref}.tar`;
+}
 
-const GitHubContentsItemSchema = z.object({
-  type: z.enum(["file", "dir", "submodule", "symlink"]),
-  name: z.string(),
-  path: z.string(),
-  sha: z.string(),
-  size: z.number(),
-  url: z.string(),
-  git_url: z.string().nullable(),
-  html_url: z.string().nullable(),
-  download_url: z.string().nullable(),
-  _links: GitHubContentsLinksSchema,
-  content: z.string().optional(),
-  encoding: z.string().optional(),
-});
+export interface NewsletterMetadata {
+  number: number;
+  date: Date;
+  path: string;
+  filename: string;
+}
 
-const GitHubContentsArraySchema = z.array(GitHubContentsItemSchema);
-
-const GitHubFileContentsSchema = GitHubContentsItemSchema.extend({
-  type: z.literal("file"),
-  content: z.string(),
-  encoding: z.string().optional(),
-});
-
-type GitHubContentsItem = z.infer<typeof GitHubContentsItemSchema>;
-
-interface TarEntryData {
+export interface NewsletterFile {
   name: string;
+  path: string;
   size: number;
 }
 
-/**
- * Fetches the repository as a tarball and extracts newsletter metadata.
- * This is more efficient than making multiple API calls for listing newsletters.
- */
-async function fetchNewslettersFromTarball(
+export interface RepositoryContents {
+  files: Map<string, NewsletterFile>;
+  newsletters: NewsletterMetadata[];
+  getFileContent(path: string): Uint8Array | null;
+}
+
+function gunzip(data: Uint8Array): Promise<Uint8Array> {
+  return new Promise((resolve, reject) => {
+    zlib.gunzip(data, (err, result) => {
+      if (err) reject(err);
+      else resolve(new Uint8Array(result));
+    });
+  });
+}
+
+async function fetchFreshTarball(
   owner: string,
   repo: string,
+  ref: string,
   token: string,
-  ref: string = "main",
-): Promise<NewsletterMetadata[]> {
-  const tarballUrl = `https://api.github.com/repos/${owner}/${repo}/tarball/${ref}`;
-  const response = await fetch(tarballUrl, {
+  cacheKey: string,
+): Promise<Uint8Array> {
+  let tarballUrl = `https://api.github.com/repos/${owner}/${repo}/tarball/${ref}`;
+  let response = await fetch(tarballUrl, {
     headers: {
       Authorization: `token ${token}`,
       Accept: "application/vnd.github.v3.raw",
@@ -82,450 +71,288 @@ async function fetchNewslettersFromTarball(
     );
   }
 
-  if (!response.body) {
-    throw new Error("Response body is null");
+  let compressedData = new Uint8Array(await response.arrayBuffer());
+  let decompressed = await gunzip(compressedData);
+
+  let tarballBuffer = new ArrayBuffer(decompressed.byteLength);
+  new Uint8Array(tarballBuffer).set(decompressed);
+
+  let file = new File([tarballBuffer], cacheKey, {
+    type: "application/x-tar",
+  });
+  await tarballCache.set(cacheKey, file);
+
+  return decompressed;
+}
+
+let tarballRevalidations = new Map<string, Promise<void>>();
+
+async function fetchTarball(
+  owner: string,
+  repo: string,
+  ref: string,
+  token: string,
+): Promise<Uint8Array> {
+  let cacheKey = getTarballCacheKey(owner, repo, ref);
+
+  if (isDev) {
+    return fetchFreshTarball(owner, repo, ref, token, cacheKey);
   }
 
-  // Parse the tarball stream
-  const entries = new Map<string, TarEntryData>();
-  const stream = response.body.pipeThrough(new DecompressionStream("gzip"));
+  let cached = await tarballCache.get(cacheKey);
 
-  await parseTar(stream, async (entry: TarEntry) => {
-    // Only process files in the newsletters directory
-    if (!entry.name.includes("newsletters/")) {
-      return;
+  if (cached) {
+    let age = Date.now() - cached.lastModified;
+
+    if (age < cache.TTL_MS) {
+      return new Uint8Array(await cached.arrayBuffer());
     }
 
-    // Skip directories (they end with /)
-    if (entry.name.endsWith("/")) {
-      return;
+    if (!tarballRevalidations.has(cacheKey)) {
+      let revalidation = (async () => {
+        try {
+          await fetchFreshTarball(owner, repo, ref, token, cacheKey);
+        } catch (error) {
+          console.error("Background tarball revalidation failed:", error);
+        } finally {
+          tarballRevalidations.delete(cacheKey);
+        }
+      })();
+
+      tarballRevalidations.set(cacheKey, revalidation);
     }
 
-    // For metadata extraction, we only need the filename and size
-    // We don't need to read the content for listing newsletters
-    entries.set(entry.name, {
-      name: entry.name,
+    return new Uint8Array(await cached.arrayBuffer());
+  }
+
+  return fetchFreshTarball(owner, repo, ref, token, cacheKey);
+}
+
+async function parseTarball(data: Uint8Array): Promise<{
+  files: Map<string, NewsletterFile>;
+  contents: Map<string, Uint8Array>;
+}> {
+  let files = new Map<string, NewsletterFile>();
+  let contents = new Map<string, Uint8Array>();
+
+  await parseTar(data, async (entry: TarEntry) => {
+    if (!entry.name.includes("newsletters/")) return;
+    if (entry.header.type === "directory" || entry.name.endsWith("/")) return;
+
+    let match = entry.name.match(/[^/]+\/newsletters\/(.+)$/);
+    if (!match) return;
+
+    let relativePath = match[1];
+    let parts = relativePath.split("/");
+    let filename = parts[parts.length - 1];
+
+    files.set(relativePath, {
+      name: filename,
+      path: relativePath,
       size: entry.size,
     });
+
+    let bytes = await entry.bytes();
+    contents.set(relativePath, bytes);
   });
 
-  // Extract newsletter metadata from parsed entries
-  const newsletters: NewsletterMetadata[] = [];
-  const newsletterDirs = new Map<string, Map<string, TarEntryData>>();
+  return { files, contents };
+}
 
-  // Group entries by newsletter directory
-  for (const [path, entry] of entries.entries()) {
-    // Extract directory name: {repo}-{ref}/newsletters/newsletter-{n}/filename
-    const match = path.match(/[^/]+\/newsletters\/(newsletter-\d+)\/(.+)$/);
-    if (!match) {
-      continue;
-    }
+function extractNewsletterMetadata(
+  files: Map<string, NewsletterFile>,
+): NewsletterMetadata[] {
+  let newsletters: NewsletterMetadata[] = [];
+  let newsletterDirs = new Map<string, NewsletterFile[]>();
 
-    const [, dirName, filename] = match;
+  for (let [filePath, file] of files) {
+    let parts = filePath.split("/");
+    if (parts.length < 2) continue;
+
+    let dirName = parts[0];
+    if (!dirName.startsWith("newsletter-")) continue;
+
     if (!newsletterDirs.has(dirName)) {
-      newsletterDirs.set(dirName, new Map());
+      newsletterDirs.set(dirName, []);
     }
-    newsletterDirs.get(dirName)!.set(filename, entry);
+    newsletterDirs.get(dirName)!.push(file);
   }
 
-  // Process each newsletter directory
-  for (const [dirName, files] of newsletterDirs.entries()) {
-    // Find the markdown file
-    const markdownFile = Array.from(files.entries()).find(([name]) =>
-      name.endsWith(".md"),
-    );
+  for (let [dirName, dirFiles] of newsletterDirs) {
+    let markdownFile = dirFiles.find((f) => f.name.endsWith(".md"));
+    if (!markdownFile) continue;
 
-    if (!markdownFile) {
-      continue;
-    }
+    let dirMatch = dirName.match(/^newsletter-(\d+)$/);
+    if (!dirMatch) continue;
 
-    const [filename] = markdownFile;
+    let number = parseInt(dirMatch[1], 10);
 
-    // Parse newsletter number from directory name
-    const dirMatch = dirName.match(/^newsletter-(\d+)$/);
-    if (!dirMatch) {
-      continue;
-    }
-
-    const number = parseInt(dirMatch[1], 10);
-
-    // Parse date from filename
-    const filenameMatch = filename.match(
+    let filenameMatch = markdownFile.name.match(
       /^(\d{4})-(\d{2})-(\d{2})-remix-newsletter-\d+\.md$/,
     );
-    if (!filenameMatch) {
-      continue;
-    }
+    if (!filenameMatch) continue;
 
-    const [, year, month, day] = filenameMatch;
-    const date = new Date(
+    let [, year, month, day] = filenameMatch;
+    let date = new Date(
       parseInt(year, 10),
       parseInt(month, 10) - 1,
       parseInt(day, 10),
     );
 
-    // Extract the path relative to repo root
-    const path = `newsletters/${dirName}/${filename}`;
-
     newsletters.push({
       number,
       date,
-      path,
-      filename,
+      path: markdownFile.path,
+      filename: markdownFile.name,
     });
   }
 
-  // Sort by number, descending (highest number first)
   newsletters.sort((a, b) => b.number - a.number);
 
   return newsletters;
 }
 
-async function fetchGitHubContentsArray(
+let repositoryContentsCache: RepositoryContents | null = null;
+let repositoryContentsCacheKey: string | null = null;
+let repositoryContentsCacheTime: number | null = null;
+let repositoryRevalidations = new Map<string, Promise<void>>();
+
+async function buildRepositoryContents(
   owner: string,
   repo: string,
-  path: string,
+  ref: string,
   token: string,
-): Promise<GitHubContentsItem[]> {
-  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
-  const response = await fetch(url, {
-    headers: {
-      Authorization: `token ${token}`,
-      Accept: "application/vnd.github.v3+json",
+): Promise<RepositoryContents> {
+  let tarballData = await fetchTarball(owner, repo, ref, token);
+  let { files, contents } = await parseTarball(tarballData);
+  let newsletters = extractNewsletterMetadata(files);
+
+  return {
+    files,
+    newsletters,
+    getFileContent(path: string): Uint8Array | null {
+      return contents.get(path) ?? null;
     },
-  });
-
-  if (!response.ok) {
-    throw new Error(
-      `Failed to fetch GitHub contents: ${response.status} ${response.statusText}`,
-    );
-  }
-
-  const data = await response.json();
-  return GitHubContentsArraySchema.parse(data);
+  };
 }
 
-async function fetchGitHubFileContents(
-  owner: string,
-  repo: string,
-  path: string,
-  token: string,
-): Promise<z.infer<typeof GitHubFileContentsSchema>> {
-  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
-  const response = await fetch(url, {
-    headers: {
-      Authorization: `token ${token}`,
-      Accept: "application/vnd.github.v3+json",
-    },
-  });
+export async function fetchRepositoryContents(
+  ref: string = "main",
+): Promise<RepositoryContents> {
+  let { token, owner, repo } = getConfig();
 
-  if (!response.ok) {
-    throw new Error(
-      `Failed to fetch GitHub contents: ${response.status} ${response.statusText}`,
-    );
+  if (!token) {
+    throw new Error("GITHUB_TOKEN environment variable is required");
   }
 
-  const data = await response.json();
+  let cacheKey = getTarballCacheKey(owner, repo, ref);
 
-  // Check if it's an array (directory) and throw error
-  if (Array.isArray(data)) {
-    throw new Error(`Expected file, got directory`);
+  if (isDev) {
+    return buildRepositoryContents(owner, repo, ref, token);
   }
 
-  return GitHubFileContentsSchema.parse(data);
-}
+  if (
+    repositoryContentsCache &&
+    repositoryContentsCacheKey === cacheKey &&
+    repositoryContentsCacheTime !== null
+  ) {
+    let age = Date.now() - repositoryContentsCacheTime;
 
-export interface NewsletterMetadata {
-  number: number;
-  date: Date;
-  path: string;
-  filename: string;
+    if (age < cache.TTL_MS) {
+      return repositoryContentsCache;
+    }
+
+    if (!repositoryRevalidations.has(cacheKey)) {
+      let revalidation = (async () => {
+        try {
+          let fresh = await buildRepositoryContents(owner, repo, ref, token);
+          repositoryContentsCache = fresh;
+          repositoryContentsCacheKey = cacheKey;
+          repositoryContentsCacheTime = Date.now();
+        } catch (error) {
+          console.error("Background repository revalidation failed:", error);
+        } finally {
+          repositoryRevalidations.delete(cacheKey);
+        }
+      })();
+
+      repositoryRevalidations.set(cacheKey, revalidation);
+    }
+
+    return repositoryContentsCache;
+  }
+
+  let fresh = await buildRepositoryContents(owner, repo, ref, token);
+  repositoryContentsCache = fresh;
+  repositoryContentsCacheKey = cacheKey;
+  repositoryContentsCacheTime = Date.now();
+
+  return fresh;
 }
 
 export async function listNewsletters(): Promise<NewsletterMetadata[]> {
-  let { token, owner, repo } = getConfig();
-
-  if (!token) {
-    throw new Error("GITHUB_TOKEN environment variable is required");
-  }
-
-  // Try using tarball API first (more efficient - single request)
-  // Fall back to Contents API if tarball fails
-  try {
-    return await fetchNewslettersFromTarball(owner, repo, token);
-  } catch (error) {
-    console.warn(
-      "Failed to fetch newsletters from tarball, falling back to Contents API:",
-      error,
-    );
-
-    // Fallback to the original Contents API approach
-    let contents = await fetchGitHubContentsArray(
-      owner,
-      repo,
-      "newsletters",
-      token,
-    );
-
-    let newsletterDirs = contents.filter(
-      (item) => item.type === "dir" && item.name.startsWith("newsletter-"),
-    );
-
-    let newsletters: NewsletterMetadata[] = [];
-
-    for (let dir of newsletterDirs) {
-      let dirContents: GitHubContentsItem[];
-      try {
-        dirContents = await fetchGitHubContentsArray(
-          owner,
-          repo,
-          dir.path,
-          token,
-        );
-      } catch {
-        continue;
-      }
-
-      let markdownFile = dirContents.find(
-        (item) => item.type === "file" && item.name.endsWith(".md"),
-      );
-
-      if (!markdownFile) {
-        continue;
-      }
-
-      // Parse newsletter number from directory name: newsletter-:n
-      let dirMatch = dir.name.match(/^newsletter-(\d+)$/);
-      if (!dirMatch) {
-        continue;
-      }
-
-      let number = parseInt(dirMatch[1], 10);
-
-      // Parse date from filename: :yyyy-:mm-:dd-remix-newsletter-:n.md
-      let filenameMatch = markdownFile.name.match(
-        /^(\d{4})-(\d{2})-(\d{2})-remix-newsletter-\d+\.md$/,
-      );
-      if (!filenameMatch) {
-        continue;
-      }
-
-      let [, year, month, day] = filenameMatch;
-      let date = new Date(
-        parseInt(year, 10),
-        parseInt(month, 10) - 1,
-        parseInt(day, 10),
-      );
-
-      newsletters.push({
-        number,
-        date,
-        path: markdownFile.path,
-        filename: markdownFile.name,
-      });
-    }
-
-    // Sort by number, descending (highest number first)
-    newsletters.sort((a, b) => b.number - a.number);
-
-    return newsletters;
-  }
+  let contents = await fetchRepositoryContents();
+  return contents.newsletters;
 }
 
 export async function fetchNewsletter(number: number): Promise<string> {
-  let { token, owner, repo } = getConfig();
+  let contents = await fetchRepositoryContents();
 
-  if (!token) {
-    throw new Error("GITHUB_TOKEN environment variable is required");
+  let newsletter = contents.newsletters.find((n) => n.number === number);
+  if (!newsletter) {
+    throw new NewsletterNotFoundError(number);
   }
 
-  // First, find the newsletter directory
-  let contents = await fetchGitHubContentsArray(
-    owner,
-    repo,
-    "newsletters",
-    token,
-  );
-
-  let dirName = `newsletter-${number}`;
-  let newsletterDir = contents.find(
-    (item) => item.type === "dir" && item.name === dirName,
-  );
-
-  if (!newsletterDir) {
-    throw new Error(`Newsletter ${number} not found`);
+  let fileContent = contents.getFileContent(newsletter.path);
+  if (!fileContent) {
+    throw new NewsletterNotFoundError(number);
   }
 
-  // Get contents of the newsletter directory
-  let dirContents = await fetchGitHubContentsArray(
-    owner,
-    repo,
-    newsletterDir.path,
-    token,
-  );
-
-  let markdownFile = dirContents.find(
-    (item) => item.type === "file" && item.name.endsWith(".md"),
-  );
-
-  if (!markdownFile) {
-    throw new Error(`Markdown file not found for newsletter ${number}`);
-  }
-
-  // Fetch the file content directly
-  let fileData = await fetchGitHubFileContents(
-    owner,
-    repo,
-    markdownFile.path,
-    token,
-  );
-
-  let content = fileData.content;
-  if (fileData.encoding === "base64") {
-    // Decode base64 content
-    const binaryString = atob(content);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    return new TextDecoder().decode(bytes);
-  }
-
-  return content;
+  return new TextDecoder().decode(fileContent);
 }
 
 export async function fetchNewsletterImage(
   number: number,
   filename: string,
 ): Promise<File> {
-  // Check cache first
-  let cacheKey = getImageCacheKey(number, filename);
-  let cachedFile = await imageCache.get(cacheKey);
-  if (cachedFile) {
-    return cachedFile;
+  let contents = await fetchRepositoryContents();
+
+  let imagePath = `newsletter-${number}/${filename}`;
+  let fileContent = contents.getFileContent(imagePath);
+
+  if (!fileContent) {
+    throw new ImageNotFoundError(number, filename);
   }
 
-  let { token, owner, repo } = getConfig();
-
-  if (!token) {
-    throw new Error("GITHUB_TOKEN environment variable is required");
-  }
-
-  // First, find the newsletter directory
-  let contents = await fetchGitHubContentsArray(
-    owner,
-    repo,
-    "newsletters",
-    token,
-  );
-
-  let dirName = `newsletter-${number}`;
-  let newsletterDir = contents.find(
-    (item) => item.type === "dir" && item.name === dirName,
-  );
-
-  if (!newsletterDir) {
-    throw new Error(`Newsletter ${number} not found`);
-  }
-
-  // Construct the image path relative to the newsletter directory
-  let imagePath = `${newsletterDir.path}/${filename}`;
-
-  // Fetch the image file from GitHub
-  let fileData = await fetchGitHubFileContents(owner, repo, imagePath, token);
-
-  // Detect MIME type from filename extension
   let mimeType = detectMimeType(filename) || "application/octet-stream";
 
-  // Use download_url to stream the file content instead of loading it all into memory
-  let downloadUrl = fileData.download_url;
-  if (!downloadUrl) {
-    throw new Error("Download URL not available");
-  }
+  // Create a copy of the Uint8Array to ensure we have a proper ArrayBuffer
+  let arrayBuffer = fileContent.slice().buffer;
 
-  // Fetch the file size first to determine byteLength
-  let headResponse = await fetch(downloadUrl, {
-    method: "HEAD",
-    headers: {
-      Authorization: `token ${token}`,
-    },
-  });
-
-  if (!headResponse.ok) {
-    throw new Error(`Failed to fetch file metadata: ${headResponse.status}`);
-  }
-
-  let contentLength = headResponse.headers.get("content-length");
-  if (!contentLength) {
-    throw new Error("Content-Length header not available");
-  }
-
-  let byteLength = parseInt(contentLength, 10);
-
-  // Create lazy content that streams from GitHub's download_url
-  let lazyContent: LazyContent = {
-    byteLength,
-    stream(start = 0, end = byteLength) {
-      let headers: HeadersInit = {
-        Authorization: `token ${token}`,
-      };
-
-      // Add Range header if we're not requesting the full file
-      if (start > 0 || end < byteLength) {
-        headers["Range"] = `bytes=${start}-${end - 1}`;
-      }
-
-      // Return a ReadableStream that fetches on-demand
-      return new ReadableStream({
-        async start(controller) {
-          try {
-            let response = await fetch(downloadUrl, { headers });
-
-            if (!response.ok && response.status !== 206) {
-              controller.error(
-                new Error(`Failed to fetch file content: ${response.status}`),
-              );
-              return;
-            }
-
-            let body = response.body;
-            if (!body) {
-              controller.error(new Error("Response body is null"));
-              return;
-            }
-
-            let reader = body.getReader();
-
-            function pump(): Promise<void> {
-              return reader.read().then(({ done, value }) => {
-                if (done) {
-                  controller.close();
-                  return;
-                }
-                controller.enqueue(value);
-                return pump();
-              });
-            }
-
-            return pump().catch((error) => {
-              controller.error(error);
-            });
-          } catch (error) {
-            controller.error(error);
-          }
-        },
-      });
-    },
-  };
-
-  let file = new LazyFile(lazyContent, filename, {
+  return new File([arrayBuffer], filename, {
     type: mimeType,
     lastModified: Date.now(),
   });
+}
 
-  // Cache the file for future requests
-  // Note: This will read the file content to cache it, but subsequent requests will be served from cache
-  await imageCache.set(cacheKey, file);
+export class NewsletterNotFoundError extends Error {
+  number: number;
 
-  return file;
+  constructor(number: number) {
+    super(`Newsletter ${number} not found`);
+    this.name = "NewsletterNotFoundError";
+    this.number = number;
+  }
+}
+
+export class ImageNotFoundError extends Error {
+  newsletterNumber: number;
+  filename: string;
+
+  constructor(newsletterNumber: number, filename: string) {
+    super(`Image "${filename}" not found in newsletter ${newsletterNumber}`);
+    this.name = "ImageNotFoundError";
+    this.newsletterNumber = newsletterNumber;
+    this.filename = filename;
+  }
 }

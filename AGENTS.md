@@ -74,8 +74,7 @@ newsletter-archive/
 
 ### Server Setup
 
-- Uses Node.js HTTP server (`node:http`)
-- Converts Node.js HTTP requests to Web Fetch API Request objects
+- Uses `@remix-run/node-fetch-server` to create a Node.js HTTP server with Fetch API
 - Router is imported from `./app/router.ts`
 - Default port: `44100` (configurable via `PORT` env var)
 - Uses Node.js native TypeScript support (`--experimental-strip-types`)
@@ -119,6 +118,7 @@ Located in `app/utils/markdown.ts`:
 
 ### Core Remix 3 Packages
 
+- `@remix-run/node-fetch-server` - Node.js HTTP server with Fetch API
 - `@remix-run/fetch-router` - Router implementation
 - `@remix-run/html-template` - HTML template utilities (used for generating HTML)
 - `@remix-run/response` - Response utilities (HTML, file responses)

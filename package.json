@@ -12,6 +12,7 @@
     "@remix-run/lazy-file": "^4.2.0",
     "@remix-run/logger-middleware": "^0.1.0",
     "@remix-run/mime": "^0.1.0",
+    "@remix-run/node-fetch-server": "^0.12.0",
     "@remix-run/response": "^0.2.0",
     "@remix-run/static-middleware": "^0.4.0",
     "@remix-run/tar-parser": "^0.7.0",
