@@ -50,6 +50,18 @@ jobs:
       - name: 🎈 Setup Fly
         uses: superfly/flyctl-actions/setup-flyctl@1.5
 
+      - name: 📦 Create App (if needed)
+        if: ${{ github.ref == 'refs/heads/main' }}
+        run: |
+          if [ -n "${{ secrets.FLY_ORG }}" ]; then
+            flyctl apps create newsletter-archive --org "${{ secrets.FLY_ORG }}" || true
+          else
+            flyctl apps create newsletter-archive || true
+          fi
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        continue-on-error: true
+
       - name: 🚀 Deploy Production
         if: ${{ github.ref == 'refs/heads/main' }}
         run: flyctl deploy --remote-only
