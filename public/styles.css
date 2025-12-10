@@ -213,7 +213,7 @@ h1 {
   font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas,
     "Courier New", monospace;
   font-size: 0.875em;
-  color: var(--accent-color);
+  color: var(--text-secondary);
 }
 
 .newsletter-content pre {
@@ -229,7 +229,7 @@ h1 {
   background: none;
   border: none;
   padding: 0;
-  color: var(--text-primary);
+  color: var(--text-secondary);
   font-size: 0.875rem;
 }
 
