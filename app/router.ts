@@ -34,8 +34,6 @@ middleware.push(
 
 export let router = createRouter({ middleware });
 
-let { assets: _unused, ...pageRoutes } = routes;
-
 function transformImageUrls(
   htmlContent: string,
   newsletterNumber: number,
@@ -99,7 +97,7 @@ function renderNewsletterPage(content: SafeHtml, backHref: string): Response {
   });
 }
 
-router.map(pageRoutes, {
+router.map(routes, {
   async healthcheck() {
     return new Response("OK", {
       status: 200,
