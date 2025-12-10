@@ -2,7 +2,7 @@ name: 🚀 Deploy (production)
 on:
   push:
     branches:
-      - prod
+      - main
     paths-ignore:
       - "README.md"
 
