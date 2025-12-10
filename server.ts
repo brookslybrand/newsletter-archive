@@ -9,7 +9,7 @@ let server = http.createServer(
   createRequestListener((request) => router.fetch(request)),
 );
 
-let port = process.env.PORT ? parseInt(process.env.PORT, 10) : 44100;
+let port = process.env.PORT ? parseInt(process.env.PORT, 10) : 8080;
 
 server.listen(port, () => {
   console.log(`Newsletter Archive demo is running on http://localhost:${port}`);

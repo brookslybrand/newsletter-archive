@@ -5,4 +5,5 @@ export let routes = route({
   home: "/",
   newsletter: "/newsletter/:number",
   newsletterImage: "/newsletter/:number/image/:filename",
+  healthcheck: "/healthcheck",
 });

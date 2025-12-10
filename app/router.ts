@@ -100,6 +100,15 @@ function renderNewsletterPage(content: SafeHtml, backHref: string): Response {
 }
 
 router.map(pageRoutes, {
+  async healthcheck() {
+    return new Response("OK", {
+      status: 200,
+      headers: {
+        "Content-Type": "text/plain",
+      },
+    });
+  },
+
   async home() {
     try {
       let newsletters = await listNewsletters();

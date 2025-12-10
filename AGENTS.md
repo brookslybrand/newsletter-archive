@@ -161,7 +161,7 @@ Located in `app/utils/markdown.ts`:
 
 ### TypeScript Configuration
 
-- Uses Node.js native TypeScript support (`--experimental-strip-types`)
+- Uses Node.js native TypeScript support
 - `allowImportingTsExtensions: true` - Can import `.ts` files directly
 - `rewriteRelativeImportExtensions: true` - Auto-rewrites imports
 - `verbatimModuleSyntax: true` - Preserves import/export syntax
