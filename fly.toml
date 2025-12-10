@@ -9,7 +9,7 @@ processes = []
   auto_rollback = true
 
 [vm]
-  memory_mb = 1024
+  memory_mb = 512
 
 [[services]]
   internal_port = 8080
