@@ -15,8 +15,7 @@ An application that fetches newsletters from a GitHub repository and displays th
 
 ```bash
 GITHUB_TOKEN=your_github_personal_access_token_here
-GITHUB_OWNER=remix-run
-GITHUB_REPO=newsletter
+GITHUB_REPO=remix-run/newsletter
 ```
 
 2. Install dependencies and start the server:
@@ -41,6 +40,5 @@ This runs the server with watch mode for automatic reloading on file changes.
 ## Environment Variables
 
 - `GITHUB_TOKEN` (required) - GitHub Personal Access Token for API authentication
-- `GITHUB_OWNER` (optional) - Repository owner, defaults to `remix-run`
-- `GITHUB_REPO` (optional) - Repository name, defaults to `newsletter`
+- `GITHUB_REPO` (optional) - Repository in format `owner/repo`, defaults to `remix-run/newsletter`
 - `PORT` (optional) - Server port, defaults to `44100`

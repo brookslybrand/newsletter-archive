@@ -11,10 +11,20 @@ let tarballCache = createFsFileStorage(cacheDir);
 let isDev = process.env.NODE_ENV === "development";
 
 function getConfig() {
+  let githubRepo = process.env.GITHUB_REPO || "remix-run/newsletter";
+  let [owner, ...repoParts] = githubRepo.split("/");
+  let repo = repoParts.join("/");
+
+  if (!owner || !repo) {
+    throw new Error(
+      `GITHUB_REPO must be in format "owner/repo", got: ${githubRepo}`,
+    );
+  }
+
   return {
     token: process.env.GITHUB_TOKEN,
-    owner: process.env.GITHUB_OWNER || "remix-run",
-    repo: process.env.GITHUB_REPO || "newsletter",
+    owner,
+    repo,
   };
 }
 

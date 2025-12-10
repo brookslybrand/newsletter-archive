@@ -175,8 +175,7 @@ Required:
 
 Optional:
 
-- `GITHUB_OWNER` - Repository owner (defaults to `remix-run`)
-- `GITHUB_REPO` - Repository name (defaults to `newsletter`)
+- `GITHUB_REPO` - Repository in format `owner/repo` (defaults to `remix-run/newsletter`)
 - `PORT` - Server port (defaults to `44100`)
 
 ## Important Patterns
