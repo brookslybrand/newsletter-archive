@@ -8,6 +8,7 @@ import {
   listNewsletters,
   fetchNewsletter,
   fetchNewsletterImage,
+  fetchRepositoryContents,
   NewsletterNotFoundError,
   ImageNotFoundError,
 } from "./utils/github.ts";
@@ -52,6 +53,55 @@ function transformImageUrls(
       return `src="${imageUrl}"`;
     },
   );
+}
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function extractPreview(markdown: string, maxLength: number = 200): string {
+  // Remove markdown headers, code blocks, and images
+  let text = markdown
+    .replace(/^#{1,6}\s+.+$/gm, "") // Remove headers
+    .replace(/```[\s\S]*?```/g, "") // Remove code blocks
+    .replace(/`[^`]+`/g, "") // Remove inline code
+    .replace(/!\[.*?\]\(.*?\)/g, "") // Remove images
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // Convert links to text
+    .replace(/\*\*([^*]+)\*\*/g, "$1") // Remove bold
+    .replace(/\*([^*]+)\*/g, "$1") // Remove italic
+    .trim();
+
+  // Split into paragraphs and get the first non-empty one
+  let paragraphs = text.split(/\n\s*\n/).filter((p) => p.trim().length > 0);
+  if (paragraphs.length === 0) {
+    return "";
+  }
+
+  let preview = paragraphs[0].trim();
+
+  // Truncate to max length, trying to end at a sentence boundary
+  if (preview.length > maxLength) {
+    preview = preview.substring(0, maxLength);
+    let lastPeriod = preview.lastIndexOf(".");
+    let lastExclamation = preview.lastIndexOf("!");
+    let lastQuestion = preview.lastIndexOf("?");
+    let lastSentenceEnd = Math.max(lastPeriod, lastExclamation, lastQuestion);
+
+    if (lastSentenceEnd > maxLength * 0.5) {
+      // If we found a sentence end reasonably close to the end, use it
+      preview = preview.substring(0, lastSentenceEnd + 1);
+    } else {
+      // Otherwise, just truncate and add ellipsis
+      preview = preview.trim() + "...";
+    }
+  }
+
+  return preview;
 }
 
 function renderLayout(content: SafeHtml, init?: ResponseInit): Response {
@@ -110,6 +160,7 @@ router.map(routes, {
   async home() {
     try {
       let newsletters = await listNewsletters();
+      let contents = await fetchRepositoryContents();
 
       let newsletterListHtml = "";
       if (newsletters.length === 0) {
@@ -119,9 +170,28 @@ router.map(routes, {
           </div>
         `;
       } else {
-        newsletterListHtml = newsletters
-          .map(
-            (newsletter) => `
+        newsletterListHtml = await Promise.all(
+          newsletters.map(async (newsletter) => {
+            // Get preview from markdown
+            let preview = "";
+            try {
+              let fileContent = contents.getFileContent(newsletter.path);
+              if (fileContent) {
+                let markdown = new TextDecoder().decode(fileContent);
+                preview = extractPreview(markdown);
+              }
+            } catch (error) {
+              console.error(
+                `Error extracting preview for newsletter ${newsletter.number}:`,
+                error,
+              );
+            }
+
+            let previewHtml = preview
+              ? `<p class="newsletter-preview">${escapeHtml(preview)}</p>`
+              : "";
+
+            return `
           <a
             href="${routes.newsletter.href({
               number: newsletter.number.toString(),
@@ -140,10 +210,11 @@ router.map(routes, {
                 })}
               </span>
             </div>
+            ${previewHtml}
           </a>
-        `,
-          )
-          .join("");
+        `;
+          }),
+        ).then((items) => items.join(""));
       }
 
       let content = html`

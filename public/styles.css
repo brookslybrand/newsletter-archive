@@ -35,7 +35,8 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
   line-height: 1.7;
   color: var(--text-primary);
   background: var(--bg-primary);
@@ -124,6 +125,17 @@ h1 {
   font-size: 0.9375rem;
 }
 
+.newsletter-preview {
+  margin-top: 0.75rem;
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .newsletter-content {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
@@ -198,7 +210,8 @@ h1 {
   border: 1px solid var(--code-border);
   padding: 0.2rem 0.5rem;
   border-radius: 4px;
-  font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace;
+  font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas,
+    "Courier New", monospace;
   font-size: 0.875em;
   color: var(--accent-color);
 }
@@ -260,4 +273,3 @@ h1 {
 .back-link:hover {
   color: var(--accent-color);
 }
-
