@@ -55,15 +55,6 @@ function transformImageUrls(
   );
 }
 
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
 function extractPreview(markdown: string, maxLength: number = 200): string {
   // Remove markdown headers, code blocks, and images
   let text = markdown
@@ -162,15 +153,15 @@ router.map(routes, {
       let newsletters = await listNewsletters();
       let contents = await fetchRepositoryContents();
 
-      let newsletterListHtml = "";
+      let newsletterItems: SafeHtml[] = [];
       if (newsletters.length === 0) {
-        newsletterListHtml = `
+        newsletterItems.push(html`
           <div class="newsletter-item">
             <p>No newsletters found.</p>
           </div>
-        `;
+        `);
       } else {
-        newsletterListHtml = await Promise.all(
+        newsletterItems = await Promise.all(
           newsletters.map(async (newsletter) => {
             // Get preview from markdown
             let preview = "";
@@ -187,41 +178,41 @@ router.map(routes, {
               );
             }
 
-            let previewHtml = preview
-              ? `<p class="newsletter-preview">${escapeHtml(preview)}</p>`
-              : "";
-
-            return `
-          <a
-            href="${routes.newsletter.href({
-              number: newsletter.number.toString(),
-            })}"
-            class="newsletter-item"
-          >
-            <div class="newsletter-header">
-              <span class="newsletter-number">
-                Newsletter #${newsletter.number}
-              </span>
-              <span class="newsletter-date">
-                ${newsletter.date.toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </span>
-            </div>
-            ${previewHtml}
-          </a>
-        `;
+            return html`
+              <a
+                href="${routes.newsletter.href({
+                  number: newsletter.number.toString(),
+                })}"
+                class="newsletter-item"
+              >
+                <div class="newsletter-header">
+                  <span class="newsletter-number">
+                    Newsletter #${newsletter.number}
+                  </span>
+                  <span class="newsletter-date">
+                    ${newsletter.date.toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </span>
+                </div>
+                ${preview
+                  ? html`<p class="newsletter-preview">${preview}</p>`
+                  : ""}
+              </a>
+            `;
           }),
-        ).then((items) => items.join(""));
+        );
       }
 
       let content = html`
         <header>
           <h1>Remix Newsletter Archive</h1>
         </header>
-        <div class="newsletter-list">${html.raw`${newsletterListHtml}`}</div>
+        <div class="newsletter-list">
+          ${newsletterItems.map((item) => html.raw`${item}`)}
+        </div>
       `;
 
       return renderLayout(content, {
