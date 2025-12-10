@@ -23,7 +23,6 @@ This is a **Newsletter Archive** application that fetches newsletters from a Git
 1. **No File-Based Routing**: Remix 3 does NOT use file-based routing like old Remix. Instead, routes are defined programmatically using `@remix-run/fetch-router`.
 
 2. **Modular Packages**: Remix 3 is distributed as many small, composable packages:
-
    - `@remix-run/fetch-router` - Router for the web Fetch API
    - `@remix-run/html-template` - HTML template utilities
    - `@remix-run/response` - Response utilities (HTML, file, etc.)
@@ -32,7 +31,6 @@ This is a **Newsletter Archive** application that fetches newsletters from a Git
    - And many more...
 
 3. **Web Standards First**: Remix 3 prioritizes Web APIs:
-
    - Uses Web Streams API instead of Node.js streams
    - Uses `Uint8Array` instead of Node.js `Buffer`
    - Uses Web Crypto API instead of `node:crypto`
@@ -92,13 +90,11 @@ newsletter-archive/
 Located in `app/utils/github.ts`:
 
 - **`listNewsletters()`**: Fetches all newsletter metadata from GitHub
-
   - Looks for directories matching `newsletter-:n/` pattern
   - Parses dates from filenames: `:yyyy-:mm-:dd-remix-newsletter-:n.md`
   - Returns sorted array (newest first)
 
 - **`fetchNewsletter(number)`**: Fetches markdown content for a specific newsletter
-
   - Uses GitHub Contents API
   - Returns markdown as string
 

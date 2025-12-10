@@ -63,6 +63,9 @@ importers:
       oxlint:
         specifier: ^0.15.0
         version: 0.15.15
+      prettier:
+        specifier: ^3.3.3
+        version: 3.7.4
 
 packages:
 
@@ -235,6 +238,11 @@ packages:
     engines: {node: '>=8.*'}
     hasBin: true
 
+  prettier@3.7.4:
+    resolution: {integrity: sha512-v6UNi1+3hSlVvv8fSaoUbggEM5VErKmmpGA7Pl3HF8V6uKY7rvClBOJlH6yNwQtfTueNkGVpOv/mtWL9L4bgRA==}
+    engines: {node: '>=14'}
+    hasBin: true
+
   undici-types@7.16.0:
     resolution: {integrity: sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw==}
 
@@ -371,5 +379,7 @@ snapshots:
       '@oxlint/linux-x64-musl': 0.15.15
       '@oxlint/win32-arm64': 0.15.15
       '@oxlint/win32-x64': 0.15.15
+
+  prettier@3.7.4: {}
 
   undici-types@7.16.0: {}
