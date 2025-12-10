@@ -78,7 +78,7 @@ newsletter-archive/
 - Converts Node.js HTTP requests to Web Fetch API Request objects
 - Router is imported from `./app/router.ts`
 - Default port: `44100` (configurable via `PORT` env var)
-- Uses `tsx` to run TypeScript directly (no compilation step)
+- Uses Node.js native TypeScript support (`--experimental-strip-types`)
 
 ### Routing
 
@@ -140,17 +140,16 @@ Located in `app/utils/markdown.ts`:
 
 ### Development Dependencies
 
-- `tsx` - TypeScript execution (no compilation step)
 - `@types/node` - Node.js type definitions
 
 ## Development Workflow
 
 ### Scripts
 
-- `bun start` - Start production server
-- `bun dev` - Start development server with watch mode (auto-reloads on file changes)
-- `bun test` - Run tests
-- `bun typecheck` - Type check without emitting
+- `pnpm start` - Start production server
+- `pnpm dev` - Start development server with watch mode (auto-reloads on file changes)
+- `pnpm test` - Run tests
+- `pnpm typecheck` - Type check without emitting
 
 ### HTML Generation
 
@@ -162,7 +161,7 @@ Located in `app/utils/markdown.ts`:
 
 ### TypeScript Configuration
 
-- Uses `tsx` to run TypeScript directly (no compilation step)
+- Uses Node.js native TypeScript support (`--experimental-strip-types`)
 - `allowImportingTsExtensions: true` - Can import `.ts` files directly
 - `rewriteRelativeImportExtensions: true` - Auto-rewrites imports
 - `verbatimModuleSyntax: true` - Preserves import/export syntax
@@ -243,7 +242,7 @@ Remix 3 middleware packages can be composed:
 4. **Use Web APIs** - Prefer `File`, `Blob`, `ReadableStream` over Node.js equivalents
 5. **Check package names** - All Remix packages are scoped as `@remix-run/*`
 6. **Runtime-first** - Code should work without bundling/compilation
-7. **TypeScript native** - Server code runs directly with `tsx`, no compilation step
+7. **TypeScript native** - Server code runs directly with Node.js native TypeScript support
 8. **Modular design** - Each Remix package is independent and composable
 9. **Router file** - The router is in `app/router.ts` (not `.tsx` - no JSX)
 10. **No type casting** - Never use TypeScript type assertions (`as`, `as!`, `as?`, `satisfies`). Instead, use proper type guards, type narrowing, or fix the underlying type issues. Type casting bypasses TypeScript's safety and can lead to runtime errors.
