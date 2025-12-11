@@ -70,7 +70,7 @@ async function fetchFreshTarball(
   let tarballUrl = `https://api.github.com/repos/${owner}/${repo}/tarball/${ref}`;
   let response = await fetch(tarballUrl, {
     headers: {
-      Authorization: `token ${token}`,
+      Authorization: `Bearer ${token}`,
       Accept: "application/vnd.github.v3.raw",
     },
   });
@@ -84,10 +84,10 @@ async function fetchFreshTarball(
   let compressedData = new Uint8Array(await response.arrayBuffer());
   let decompressed = await gunzip(compressedData);
 
-  let tarballBuffer = new ArrayBuffer(decompressed.byteLength);
-  new Uint8Array(tarballBuffer).set(decompressed);
+  let arrayBuffer = new ArrayBuffer(decompressed.byteLength);
+  new Uint8Array(arrayBuffer).set(decompressed);
 
-  let file = new File([tarballBuffer], cacheKey, {
+  let file = new File([arrayBuffer], cacheKey, {
     type: "application/x-tar",
   });
   await tarballCache.set(cacheKey, file);
@@ -337,7 +337,8 @@ export async function fetchNewsletterImage(
   let mimeType = detectMimeType(filename) || "application/octet-stream";
 
   // Create a copy of the Uint8Array to ensure we have a proper ArrayBuffer
-  let arrayBuffer = fileContent.slice().buffer;
+  let copy = new Uint8Array(fileContent);
+  let arrayBuffer = copy.buffer;
 
   return new File([arrayBuffer], filename, {
     type: mimeType,
