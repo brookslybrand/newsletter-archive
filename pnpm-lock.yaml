@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@remix-run/fs':
+        specifier: ^0.3.0
+        version: 0.3.0(@remix-run/lazy-file@4.2.0(@remix-run/mime@0.1.0))(@remix-run/mime@0.1.0)
       '@remix-run/html-template':
         specifier: ^0.3.0
         version: 0.3.0
@@ -82,8 +85,19 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@remix-run/fs@0.3.0':
+    resolution: {integrity: sha512-gf9OF3fNArNSdk/2m7mh5JLk61ynXz4cAMKgsPDL8eo+o3Ve9j8nir/vv2x9kqmE0FyFlCxKF1+aMITJkJ6Bqg==}
+    peerDependencies:
+      '@remix-run/lazy-file': ^4.2.0
+      '@remix-run/mime': ^0.1.0
+
   '@remix-run/html-template@0.3.0':
     resolution: {integrity: sha512-aAMx68udtIk0fmCpCXHYscVeCDsRVEmEgh4XvtusPr3vkHu3jn4gx5oAxgsPXPdDmmD/d75SYyI0m/F+aLz5iQ==}
+
+  '@remix-run/lazy-file@4.2.0':
+    resolution: {integrity: sha512-gW93kP7j7MSgiAbALc4Cy1d0hG79mj6O5ExMyHyS7bZU7L2hiLZifGI0sKC1rjHR9DFQrNSyPig+KMLyiLk/kg==}
+    peerDependencies:
+      '@remix-run/mime': ^0.1.0
 
   '@remix-run/mime@0.1.0':
     resolution: {integrity: sha512-SUuIhuzaFdPPF8hPJ2qneILnP3Nxc96jvuz6QAhXDeqenXsCNUdduF+6J2PILdzme0t3dVZcHARfcgYPTaOWdg==}
@@ -374,7 +388,16 @@ snapshots:
   '@oxlint/win32-x64@0.15.15':
     optional: true
 
+  '@remix-run/fs@0.3.0(@remix-run/lazy-file@4.2.0(@remix-run/mime@0.1.0))(@remix-run/mime@0.1.0)':
+    dependencies:
+      '@remix-run/lazy-file': 4.2.0(@remix-run/mime@0.1.0)
+      '@remix-run/mime': 0.1.0
+
   '@remix-run/html-template@0.3.0': {}
+
+  '@remix-run/lazy-file@4.2.0(@remix-run/mime@0.1.0)':
+    dependencies:
+      '@remix-run/mime': 0.1.0
 
   '@remix-run/mime@0.1.0': {}
 

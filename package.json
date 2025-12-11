@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@remix-run/fs": "^0.3.0",
     "@remix-run/html-template": "^0.3.0",
     "@remix-run/mime": "^0.1.0",
     "@remix-run/tar-parser": "^0.7.0",

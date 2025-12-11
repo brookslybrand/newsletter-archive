@@ -1,6 +1,7 @@
 import "dotenv/config";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+import { writeFile } from "@remix-run/fs";
 import {
   fetchNewsletter,
   fetchNewsletterImage,
@@ -27,16 +28,16 @@ async function ensureDir(dir: string): Promise<void> {
   }
 }
 
-async function writeFile(
+async function writeOutputFile(
   filePath: string,
-  content: string | Uint8Array,
+  content: string | ArrayBuffer,
 ): Promise<void> {
   await ensureDir(path.dirname(filePath));
-  if (typeof content === "string") {
-    await fs.writeFile(filePath, content, "utf-8");
-  } else {
-    await fs.writeFile(filePath, content);
-  }
+
+  let fileName = path.basename(filePath);
+  let file = new File([content], fileName);
+
+  await writeFile(filePath, file);
 }
 
 async function copyDirectory(src: string, dest: string): Promise<void> {
@@ -124,7 +125,7 @@ async function build(): Promise<void> {
   `;
 
   let homeHtml = renderLayoutHtml(homeContent);
-  await writeFile(path.join(DIST_DIR, "index.html"), homeHtml);
+  await writeOutputFile(path.join(DIST_DIR, "index.html"), homeHtml);
 
   // Build newsletter pages
   console.log("Building newsletter pages...");
@@ -147,7 +148,10 @@ async function build(): Promise<void> {
         newsletter.number,
       );
 
-      await writeFile(path.join(newsletterDir, "index.html"), newsletterHtml);
+      await writeOutputFile(
+        path.join(newsletterDir, "index.html"),
+        newsletterHtml,
+      );
 
       // Copy images for this newsletter
       let imageDir = path.join(newsletterDir, "image");
@@ -171,8 +175,8 @@ async function build(): Promise<void> {
             newsletter.number,
             imageFile.name,
           );
-          let imageData = new Uint8Array(await imageFileObj.arrayBuffer());
-          await writeFile(path.join(imageDir, imageFile.name), imageData);
+          let imageData = await imageFileObj.arrayBuffer();
+          await writeOutputFile(path.join(imageDir, imageFile.name), imageData);
           console.log(`    Copied image: ${imageFile.name}`);
         } catch (error) {
           console.error(`    Error copying image ${imageFile.name}:`, error);
@@ -190,7 +194,7 @@ async function build(): Promise<void> {
 
   // Create .nojekyll file
   console.log("Creating .nojekyll file...");
-  await writeFile(path.join(DIST_DIR, ".nojekyll"), "");
+  await writeOutputFile(path.join(DIST_DIR, ".nojekyll"), "");
 
   console.log("Build complete!");
 }
