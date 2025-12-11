@@ -71,8 +71,8 @@ export function renderLayoutHtml(content: SafeHtml): string {
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Remix Newsletter Archive</title>
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="stylesheet" href="/styles.css" />
+        <link rel="icon" href="favicon.ico" />
+        <link rel="stylesheet" href="styles.css" />
       </head>
       <body>
         <div class="container">${content}</div>
@@ -95,8 +95,8 @@ export function renderNewsletterPageHtml(
         <title>
           Newsletter #${newsletterNumber} | Remix Newsletter Archive
         </title>
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="stylesheet" href="/styles.css" />
+        <link rel="icon" href="favicon.ico" />
+        <link rel="stylesheet" href="styles.css" />
       </head>
       <body>
         <div class="container">
