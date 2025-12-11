@@ -275,3 +275,59 @@ h1 {
 .back-link:hover {
   color: var(--accent-color);
 }
+
+@view-transition {
+  navigation: auto;
+}
+
+/* Assign transition names */
+.newsletter-list,
+.newsletter-content {
+  view-transition-name: content-card;
+}
+
+header > h1 {
+  view-transition-name: page-title;
+}
+
+/* Animate the container size/position */
+::view-transition-group(content-card) {
+  animation-duration: 0.3s;
+  animation-timing-function: cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+/* Delay the page title fade-in */
+::view-transition-new(page-title) {
+  animation: fade-in 0.15s ease-out 0.25s both;
+}
+
+::view-transition-old(page-title) {
+  animation: none;
+  opacity: 0;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Disable all cross-fade animations, only morph containers */
+::view-transition-old(root),
+::view-transition-new(root),
+::view-transition-old(content-card),
+::view-transition-new(content-card) {
+  animation: none;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none;
+  }
+}
