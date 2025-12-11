@@ -14,8 +14,13 @@ import {
 } from "./utils/github.ts";
 import { cache } from "./utils/cache.ts";
 import { markdownToHtml } from "./utils/markdown.ts";
+import {
+  transformImageUrls,
+  extractPreview,
+  renderLayout,
+  renderNewsletterPage,
+} from "./utils/html.ts";
 import { html, type SafeHtml } from "@remix-run/html-template";
-import { createHtmlResponse } from "@remix-run/response/html";
 import { createFileResponse } from "@remix-run/response/file";
 
 let middleware = [];
@@ -34,109 +39,6 @@ middleware.push(
 );
 
 export let router = createRouter({ middleware });
-
-function transformImageUrls(
-  htmlContent: string,
-  newsletterNumber: number,
-): string {
-  // Transform relative image paths to /newsletter/:number/image/:filename
-  // Matches:
-  // - ./filename.ext
-  // - filename.ext (but not absolute URLs starting with http://, https://, or /)
-  return htmlContent.replace(
-    /src="(\.\/)?([^"/]+\.(jpg|jpeg|png|gif|webp|svg|bmp|ico))"/gi,
-    (match, dotSlash, filename) => {
-      let imageUrl = routes.newsletterImage.href({
-        number: newsletterNumber.toString(),
-        filename: filename,
-      });
-      return `src="${imageUrl}"`;
-    },
-  );
-}
-
-function extractPreview(markdown: string, maxLength: number = 200): string {
-  // Remove markdown headers, code blocks, and images
-  let text = markdown
-    .replace(/^#{1,6}\s+.+$/gm, "") // Remove headers
-    .replace(/```[\s\S]*?```/g, "") // Remove code blocks
-    .replace(/`[^`]+`/g, "") // Remove inline code
-    .replace(/!\[.*?\]\(.*?\)/g, "") // Remove images
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // Convert links to text
-    .replace(/\*\*([^*]+)\*\*/g, "$1") // Remove bold
-    .replace(/\*([^*]+)\*/g, "$1") // Remove italic
-    .trim();
-
-  // Split into paragraphs and get the first non-empty one
-  let paragraphs = text.split(/\n\s*\n/).filter((p) => p.trim().length > 0);
-  if (paragraphs.length === 0) {
-    return "";
-  }
-
-  let preview = paragraphs[0].trim();
-
-  // Truncate to max length, trying to end at a sentence boundary
-  if (preview.length > maxLength) {
-    preview = preview.substring(0, maxLength);
-    let lastPeriod = preview.lastIndexOf(".");
-    let lastExclamation = preview.lastIndexOf("!");
-    let lastQuestion = preview.lastIndexOf("?");
-    let lastSentenceEnd = Math.max(lastPeriod, lastExclamation, lastQuestion);
-
-    if (lastSentenceEnd > maxLength * 0.5) {
-      // If we found a sentence end reasonably close to the end, use it
-      preview = preview.substring(0, lastSentenceEnd + 1);
-    } else {
-      // Otherwise, just truncate and add ellipsis
-      preview = preview.trim() + "...";
-    }
-  }
-
-  return preview;
-}
-
-function renderLayout(content: SafeHtml, init?: ResponseInit): Response {
-  let page = html`
-    <!DOCTYPE html>
-    <html lang="en">
-      <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Remix Newsletter Archive</title>
-        <link rel="stylesheet" href="/styles.css" />
-      </head>
-      <body>
-        <div class="container">${content}</div>
-      </body>
-    </html>
-  `;
-  return createHtmlResponse(page, init);
-}
-
-function renderNewsletterPage(content: SafeHtml, backHref: string): Response {
-  let page = html`
-    <!DOCTYPE html>
-    <html lang="en">
-      <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Remix Newsletter Archive</title>
-        <link rel="stylesheet" href="/styles.css" />
-      </head>
-      <body>
-        <div class="container">
-          <a href="${backHref}" class="back-link">← Back to archive</a>
-          <div class="newsletter-content">${content}</div>
-        </div>
-      </body>
-    </html>
-  `;
-  return createHtmlResponse(page, {
-    headers: {
-      "Cache-Control": `public, max-age=${cache.TTL_SECONDS}, stale-while-revalidate=${cache.STALE_WHILE_REVALIDATE_SECONDS}`,
-    },
-  });
-}
 
 router.map(routes, {
   async healthcheck() {
@@ -286,7 +188,7 @@ router.map(routes, {
     try {
       let markdown = await fetchNewsletter(number);
       let htmlContent = markdownToHtml(markdown);
-      let transformedHtml = transformImageUrls(htmlContent, number);
+      let transformedHtml = transformImageUrls(htmlContent, number, false);
       let safeHtml = html.raw`${transformedHtml}`;
 
       return renderNewsletterPage(safeHtml, routes.home.href());

@@ -22,10 +22,13 @@
     "@types/node": "^24.10.2",
     "@typescript/native-preview": "7.0.0-dev.20251209.1",
     "dotenv": "^16.4.5",
+    "http-server": "^14.1.1",
     "oxlint": "^0.15.0",
     "prettier": "^3.3.3"
   },
   "scripts": {
+    "build": "node app/build.ts",
+    "preview": "http-server dist -p 44100 -o",
     "dev": "NODE_ENV=development node --watch server.ts",
     "start": "node server.ts",
     "typecheck": "tsgo --noEmit",
