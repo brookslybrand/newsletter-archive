@@ -14,50 +14,56 @@ export function extractPreview(
   markdown: string,
   maxLength: number = 200,
 ): string {
-  // Remove markdown headers, code blocks, and images
-  let text = markdown
-    .replace(/^#{1,6}\s+.+$/gm, "") // Remove headers
-    .replace(/```[\s\S]*?```/g, "") // Remove code blocks
-    .replace(/`[^`]+`/g, "") // Remove inline code
-    .replace(/!\[.*?\]\(.*?\)/g, "") // Remove images
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // Convert links to text
-    .replace(/\*\*([^*]+)\*\*/g, "$1") // Remove bold
-    .replace(/\*([^*]+)\*/g, "$1") // Remove italic
-    .trim();
+  // Split into paragraphs first for early exit optimization
+  let paragraphs = markdown.split(/\n\s*\n/);
 
-  // Split into paragraphs and get the first non-empty one
-  let paragraphs = text.split(/\n\s*\n/).filter((p) => p.trim().length > 0);
-  if (paragraphs.length === 0) {
-    return "";
-  }
+  for (let paragraph of paragraphs) {
+    let trimmed = paragraph.trim();
 
-  let preview = paragraphs[0].trim();
-
-  // Truncate to max length, trying to end at a sentence boundary
-  if (preview.length > maxLength) {
-    preview = preview.substring(0, maxLength);
-    let lastPeriod = preview.lastIndexOf(".");
-    let lastExclamation = preview.lastIndexOf("!");
-    let lastQuestion = preview.lastIndexOf("?");
-    let lastSentenceEnd = Math.max(lastPeriod, lastExclamation, lastQuestion);
-
-    if (lastSentenceEnd > maxLength * 0.5) {
-      // If we found a sentence end reasonably close to the end, use it
-      preview = preview.substring(0, lastSentenceEnd + 1);
-    } else {
-      // Otherwise, just truncate and add ellipsis
-      preview = preview.trim() + "...";
+    // Short-circuit: skip headers, images, and code blocks
+    if (
+      trimmed.startsWith("#") ||
+      trimmed.startsWith("!") ||
+      trimmed.startsWith("```")
+    ) {
+      continue;
     }
+
+    // Apply transformations only to this paragraph
+    let text = trimmed
+      .replace(/`([^`]+)`/g, "$1") // Convert inline code to text
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // Convert links to text
+      .replace(/\*\*([^*]+)\*\*/g, "$1") // Remove bold
+      .replace(/\*([^*]+)\*/g, "$1") // Remove italic
+      .trim();
+
+    // Skip if empty after transformation
+    if (text.length === 0) {
+      continue;
+    }
+
+    // Found a viable paragraph - truncate if needed
+    if (text.length > maxLength) {
+      text = text.substring(0, maxLength);
+      let lastPeriod = text.lastIndexOf(".");
+      let lastExclamation = text.lastIndexOf("!");
+      let lastQuestion = text.lastIndexOf("?");
+      let lastSentenceEnd = Math.max(lastPeriod, lastExclamation, lastQuestion);
+
+      if (lastSentenceEnd > maxLength * 0.5) {
+        text = text.substring(0, lastSentenceEnd + 1);
+      } else {
+        text = text.trim() + "...";
+      }
+    }
+
+    return text;
   }
 
-  return preview;
+  return "";
 }
 
-export function renderLayoutHtml(
-  content: SafeHtml,
-  stylesheetPath: string = "./styles.css",
-  faviconPath: string = "./favicon.ico",
-): string {
+export function renderLayoutHtml(content: SafeHtml): string {
   let page = html`
     <!DOCTYPE html>
     <html lang="en">
@@ -65,8 +71,8 @@ export function renderLayoutHtml(
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Remix Newsletter Archive</title>
-        <link rel="icon" href="${faviconPath}" />
-        <link rel="stylesheet" href="${stylesheetPath}" />
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="stylesheet" href="/styles.css" />
       </head>
       <body>
         <div class="container">${content}</div>
@@ -78,9 +84,7 @@ export function renderLayoutHtml(
 
 export function renderNewsletterPageHtml(
   content: SafeHtml,
-  backHref: string,
-  stylesheetPath: string = "../../styles.css",
-  faviconPath: string = "../../favicon.ico",
+  newsletterNumber: number,
 ): string {
   let page = html`
     <!DOCTYPE html>
@@ -88,13 +92,15 @@ export function renderNewsletterPageHtml(
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Remix Newsletter Archive</title>
-        <link rel="icon" href="${faviconPath}" />
-        <link rel="stylesheet" href="${stylesheetPath}" />
+        <title>
+          Newsletter #${newsletterNumber} | Remix Newsletter Archive
+        </title>
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="stylesheet" href="/styles.css" />
       </head>
       <body>
         <div class="container">
-          <a href="${backHref}" class="back-link">← Back to archive</a>
+          <a href="/" class="back-link">← Back to archive</a>
           <div class="newsletter-content">${content}</div>
         </div>
       </body>

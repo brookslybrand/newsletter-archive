@@ -2,50 +2,23 @@ import * as zlib from "node:zlib";
 import { parseTar, type TarEntry } from "@remix-run/tar-parser";
 import { detectMimeType } from "@remix-run/mime";
 
-function getConfig() {
-  let githubRepo = process.env.GITHUB_REPO || "remix-run/newsletter";
-  let [owner, ...repoParts] = githubRepo.split("/");
-  let repo = repoParts.join("/");
-
-  if (!owner || !repo) {
-    throw new Error(
-      `GITHUB_REPO must be in format "owner/repo", got: ${githubRepo}`,
-    );
-  }
-
-  return {
-    token: process.env.GITHUB_TOKEN,
-    owner,
-    repo,
-  };
-}
-
-export interface NewsletterMetadata {
+interface NewsletterMetadata {
   number: number;
   date: Date;
   path: string;
   filename: string;
 }
 
-export interface NewsletterFile {
+interface NewsletterFile {
   name: string;
   path: string;
   size: number;
 }
 
-export interface RepositoryContents {
+interface RepositoryContents {
   files: Map<string, NewsletterFile>;
   newsletters: NewsletterMetadata[];
   getFileContent(path: string): Uint8Array | null;
-}
-
-function gunzip(data: Uint8Array): Promise<Uint8Array> {
-  return new Promise((resolve, reject) => {
-    zlib.gunzip(data, (err, result) => {
-      if (err) reject(err);
-      else resolve(new Uint8Array(result));
-    });
-  });
 }
 
 async function fetchTarball(
@@ -69,7 +42,13 @@ async function fetchTarball(
   }
 
   let compressedData = new Uint8Array(await response.arrayBuffer());
-  return gunzip(compressedData);
+
+  return new Promise((resolve, reject) => {
+    zlib.gunzip(compressedData, (err, result) => {
+      if (err) reject(err);
+      else resolve(new Uint8Array(result));
+    });
+  });
 }
 
 async function parseTarball(data: Uint8Array): Promise<{
@@ -159,51 +138,29 @@ function extractNewsletterMetadata(
 // In-memory cache for the duration of the build
 let repositoryContentsCache: RepositoryContents | null = null;
 
-async function buildRepositoryContents(
-  owner: string,
-  repo: string,
-  ref: string,
-  token: string,
-): Promise<RepositoryContents> {
-  let tarballData = await fetchTarball(owner, repo, ref, token);
+export async function fetchRepositoryContents(): Promise<RepositoryContents> {
+  // Return cached contents if already fetched
+  if (repositoryContentsCache) {
+    return repositoryContentsCache;
+  }
+
+  let tarballData = await fetchTarball(
+    "remix-run",
+    "newsletter",
+    "main",
+    process.env.GITHUB_TOKEN!,
+  );
   let { files, contents } = await parseTarball(tarballData);
   let newsletters = extractNewsletterMetadata(files);
 
-  return {
+  repositoryContentsCache = {
     files,
     newsletters,
     getFileContent(path: string): Uint8Array | null {
       return contents.get(path) ?? null;
     },
   };
-}
-
-export async function fetchRepositoryContents(
-  ref: string = "main",
-): Promise<RepositoryContents> {
-  // Return cached contents if already fetched
-  if (repositoryContentsCache) {
-    return repositoryContentsCache;
-  }
-
-  let { token, owner, repo } = getConfig();
-
-  if (!token) {
-    throw new Error("GITHUB_TOKEN environment variable is required");
-  }
-
-  repositoryContentsCache = await buildRepositoryContents(
-    owner,
-    repo,
-    ref,
-    token,
-  );
   return repositoryContentsCache;
-}
-
-export async function listNewsletters(): Promise<NewsletterMetadata[]> {
-  let contents = await fetchRepositoryContents();
-  return contents.newsletters;
 }
 
 export async function fetchNewsletter(number: number): Promise<string> {
@@ -247,7 +204,7 @@ export async function fetchNewsletterImage(
   });
 }
 
-export class NewsletterNotFoundError extends Error {
+class NewsletterNotFoundError extends Error {
   number: number;
 
   constructor(number: number) {
@@ -257,7 +214,7 @@ export class NewsletterNotFoundError extends Error {
   }
 }
 
-export class ImageNotFoundError extends Error {
+class ImageNotFoundError extends Error {
   newsletterNumber: number;
   filename: string;
 

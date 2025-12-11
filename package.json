@@ -18,7 +18,7 @@
   },
   "scripts": {
     "build": "node app/build.ts",
-    "preview": "http-server dist -p 44100 -o",
+    "preview": "http-server dist -p 44100",
     "typecheck": "tsgo --noEmit",
     "lint": "oxlint",
     "format": "prettier --write ."

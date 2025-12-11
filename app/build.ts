@@ -2,7 +2,6 @@ import "dotenv/config";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import {
-  listNewsletters,
   fetchNewsletter,
   fetchNewsletterImage,
   fetchRepositoryContents,
@@ -40,9 +39,9 @@ async function writeFile(
   }
 }
 
-async function copyFile(src: string, dest: string): Promise<void> {
-  await ensureDir(path.dirname(dest));
-  await fs.copyFile(src, dest);
+async function copyDirectory(src: string, dest: string): Promise<void> {
+  await ensureDir(dest);
+  await fs.cp(src, dest, { recursive: true });
 }
 
 async function build(): Promise<void> {
@@ -58,8 +57,8 @@ async function build(): Promise<void> {
 
   // Fetch newsletters
   console.log("Fetching newsletters from GitHub...");
-  let newsletters = await listNewsletters();
   let contents = await fetchRepositoryContents();
+  let { newsletters } = contents;
 
   if (newsletters.length === 0) {
     console.warn("No newsletters found!");
@@ -124,7 +123,7 @@ async function build(): Promise<void> {
     </div>
   `;
 
-  let homeHtml = renderLayoutHtml(homeContent, "./styles.css", "./favicon.ico");
+  let homeHtml = renderLayoutHtml(homeContent);
   await writeFile(path.join(DIST_DIR, "index.html"), homeHtml);
 
   // Build newsletter pages
@@ -145,9 +144,7 @@ async function build(): Promise<void> {
       );
       let newsletterHtml = renderNewsletterPageHtml(
         safeHtml,
-        "../../",
-        "../../styles.css",
-        "../../favicon.ico",
+        newsletter.number,
       );
 
       await writeFile(path.join(newsletterDir, "index.html"), newsletterHtml);
@@ -189,14 +186,7 @@ async function build(): Promise<void> {
   // Copy public assets
   console.log("Copying public assets...");
   let publicDir = path.join(process.cwd(), "public");
-  await copyFile(
-    path.join(publicDir, "styles.css"),
-    path.join(DIST_DIR, "styles.css"),
-  );
-  await copyFile(
-    path.join(publicDir, "favicon.ico"),
-    path.join(DIST_DIR, "favicon.ico"),
-  );
+  await copyDirectory(publicDir, DIST_DIR);
 
   // Create .nojekyll file
   console.log("Creating .nojekyll file...");
