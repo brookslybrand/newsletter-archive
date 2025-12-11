@@ -4,65 +4,34 @@ This document provides important context for AI agents working on this codebase.
 
 ## Project Overview
 
-This is a **Newsletter Archive** application that fetches newsletters from a GitHub repository and displays them as HTML. Newsletters are stored as markdown files in the GitHub repository and are converted to HTML on-demand using the GitHub API.
+This is a **Newsletter Archive** static site generator that fetches newsletters from a GitHub repository and builds static HTML files. Newsletters are stored as markdown files in the GitHub repository and are converted to HTML at build time. The generated site is deployed to GitHub Pages.
 
 ### Key Features
 
-- Fetches newsletter metadata and content from GitHub
+- Fetches newsletter metadata and content from GitHub at build time
 - Converts markdown to HTML using `marked`
-- Caches newsletter images locally using `@remix-run/file-storage`
-- Serves newsletters via a web server built with Remix 3
+- Generates static HTML files for each newsletter
+- Copies newsletter images to the output directory
+- Deployed to GitHub Pages with weekly rebuilds
 - Uses plain HTML templates (no component framework)
-
-## ⚠️ CRITICAL: Remix 3 vs Old Remix
-
-**This project uses Remix 3, which is fundamentally different from Remix 1.x/2.x.**
-
-### Key Differences
-
-1. **No File-Based Routing**: Remix 3 does NOT use file-based routing like old Remix. Instead, routes are defined programmatically using `@remix-run/fetch-router`.
-
-2. **Modular Packages**: Remix 3 is distributed as many small, composable packages:
-   - `@remix-run/fetch-router` - Router for the web Fetch API
-   - `@remix-run/html-template` - HTML template utilities
-   - `@remix-run/response` - Response utilities (HTML, file, etc.)
-   - `@remix-run/lazy-file` - Lazy, streaming file handling
-   - `@remix-run/file-storage` - Key/value storage for File objects
-   - And many more...
-
-3. **Web Standards First**: Remix 3 prioritizes Web APIs:
-   - Uses Web Streams API instead of Node.js streams
-   - Uses `Uint8Array` instead of Node.js `Buffer`
-   - Uses Web Crypto API instead of `node:crypto`
-   - Uses `Blob` and `File` instead of runtime-specific APIs
-
-4. **Runtime-First Design**: Remix 3 is designed to work without bundlers/compilers. All packages must work at runtime without static analysis.
-
-5. **No React Router**: Remix 3 does NOT use React Router. It uses `@remix-run/fetch-router` which is built on the Fetch API.
-
-### Remix 3 Philosophy
-
-From the [Remix 3 repository](https://github.com/remix-run/remix):
-
-- **Model-First Development**: Optimize for LLMs and AI workflows
-- **Build on Web APIs**: Share abstractions across the stack
-- **Religiously Runtime**: No expectation of static analysis
-- **Avoid Dependencies**: Choose wisely, wrap completely
-- **Demand Composition**: Single-purpose, replaceable abstractions
 
 ## Project Structure
 
 ```
 newsletter-archive/
 ├── app/
-│   ├── router.ts        # Route definitions using @remix-run/fetch-router
-│   ├── routes.ts        # Route path definitions
+│   ├── build.ts         # Static site generator script
 │   └── utils/
 │       ├── github.ts    # GitHub API integration
+│       ├── html.ts      # HTML template utilities
 │       └── markdown.ts  # Markdown to HTML conversion
 ├── public/
+│   ├── favicon.ico      # Site favicon
 │   └── styles.css       # Global styles
-├── server.ts            # Main server entry point
+├── dist/                # Generated static site (git-ignored)
+├── .github/
+│   └── workflows/
+│       └── deploy.yml   # GitHub Pages deployment workflow
 ├── package.json
 ├── tsconfig.json
 └── README.md
@@ -70,20 +39,16 @@ newsletter-archive/
 
 ## Architecture
 
-### Server Setup
+### Build Process
 
-- Uses `@remix-run/node-fetch-server` to create a Node.js HTTP server with Fetch API
-- Router is imported from `./app/router.ts`
-- Default port: `44100` (configurable via `PORT` env var)
-- Uses Node.js native TypeScript support (`--experimental-strip-types`)
+The build script (`app/build.ts`) performs the following steps:
 
-### Routing
-
-- Routes are defined in `app/router.ts` using `@remix-run/fetch-router`
-- Routes are NOT file-based - they're programmatically defined
-- The router uses the Fetch API (`router.fetch(request)`)
-- HTML is generated using `@remix-run/html-template` template tags
-- Responses are created using `@remix-run/response/html`
+1. Fetches all newsletters from GitHub using the tarball API
+2. Generates `index.html` for the home page (listing all newsletters)
+3. Generates `newsletter/{number}/index.html` for each newsletter page
+4. Copies newsletter images to `newsletter/{number}/image/` directory
+5. Copies public assets (`styles.css`, `favicon.ico`) to the output directory
+6. Creates `.nojekyll` file for GitHub Pages
 
 ### GitHub Integration
 
@@ -95,13 +60,23 @@ Located in `app/utils/github.ts`:
   - Returns sorted array (newest first)
 
 - **`fetchNewsletter(number)`**: Fetches markdown content for a specific newsletter
-  - Uses GitHub Contents API
   - Returns markdown as string
 
-- **`fetchNewsletterImage(number, filename)`**: Fetches and caches newsletter images
-  - Uses `@remix-run/lazy-file` for streaming
-  - Caches images using `@remix-run/file-storage` in temp directory
+- **`fetchNewsletterImage(number, filename)`**: Fetches newsletter images
   - Returns a `File` object
+
+- **`fetchRepositoryContents()`**: Fetches entire repository tarball
+  - Uses GitHub's tarball API for efficient fetching
+  - Caches tarball locally to avoid repeated downloads
+
+### HTML Templates
+
+Located in `app/utils/html.ts`:
+
+- **`renderLayoutHtml(content, stylesheetPath, faviconPath)`**: Renders the main page layout
+- **`renderNewsletterPageHtml(content, backHref, stylesheetPath, faviconPath)`**: Renders newsletter pages
+- **`extractPreview(markdown)`**: Extracts a preview snippet from markdown
+- **`transformImageUrls(htmlContent, newsletterNumber)`**: Transforms image URLs to relative paths
 
 ### Markdown Processing
 
@@ -112,47 +87,40 @@ Located in `app/utils/markdown.ts`:
 
 ## Dependencies
 
-### Core Remix 3 Packages
+### Core Packages
 
-- `@remix-run/node-fetch-server` - Node.js HTTP server with Fetch API
-- `@remix-run/fetch-router` - Router implementation
 - `@remix-run/html-template` - HTML template utilities (used for generating HTML)
-- `@remix-run/response` - Response utilities (HTML, file responses)
-- `@remix-run/lazy-file` - Lazy file streaming
 - `@remix-run/file-storage` - File caching/storage
-- `@remix-run/fs` - Filesystem utilities
-- `@remix-run/headers` - HTTP header utilities
 - `@remix-run/mime` - MIME type detection
-- `@remix-run/static-middleware` - Static file serving
-- `@remix-run/compression-middleware` - Response compression
-- `@remix-run/logger-middleware` - Request logging
+- `@remix-run/tar-parser` - Tar archive parser for GitHub tarball
 
 ### Other Dependencies
 
-- `@remix-run/tar-parser` - Tar archive parser (for potential GitHub tarball support)
 - `marked` - Markdown parser
-- `zod` - Schema validation for GitHub API responses
 - `dotenv` - Environment variable loading
 
 ### Development Dependencies
 
 - `@types/node` - Node.js type definitions
+- `http-server` - Local preview server
+- `oxlint` - Linting
+- `prettier` - Code formatting
 
 ## Development Workflow
 
 ### Scripts
 
-- `pnpm start` - Start production server
-- `pnpm dev` - Start development server with watch mode (auto-reloads on file changes)
-- `pnpm test` - Run tests
+- `pnpm build` - Build static site to `dist/`
+- `pnpm preview` - Serve the built site locally on port 44100
 - `pnpm typecheck` - Type check without emitting
+- `pnpm lint` - Run linter
+- `pnpm format` - Format code with Prettier
 
 ### HTML Generation
 
 - HTML is generated using `@remix-run/html-template` template tags
 - Use `html` template tag for safe HTML generation
 - Use `html.raw` template tag for inserting pre-rendered HTML strings
-- Responses are created using `createHtmlResponse` from `@remix-run/response/html`
 - No component framework - plain HTML templates only
 
 ### TypeScript Configuration
@@ -167,30 +135,45 @@ Located in `app/utils/markdown.ts`:
 
 Required:
 
-- `GITHUB_TOKEN` - GitHub Personal Access Token (required)
+- `GITHUB_TOKEN` - GitHub Personal Access Token with access to the newsletter repository
 
 Optional:
 
 - `GITHUB_REPO` - Repository in format `owner/repo` (defaults to `remix-run/newsletter`)
-- `PORT` - Server port (defaults to `44100`)
 
-## Important Patterns
+## Deployment
 
-### File Handling
+### GitHub Pages
 
-- Uses Web `File` API, not Node.js `fs`
-- Images are cached using `@remix-run/file-storage`
-- Uses `LazyFile` for streaming large files without loading into memory
+The site is deployed to GitHub Pages using GitHub Actions:
 
-### Error Handling
+- **Triggers**: Push to `main`, weekly cron (Mondays at 00:00 UTC), manual dispatch
+- **Workflow**: `.github/workflows/deploy.yml`
+- **Secret Required**: `NEWSLETTER_GITHUB_TOKEN` - PAT with access to the newsletter repository
 
-- Server catches errors and returns 500 responses
-- GitHub API errors should be handled gracefully
-- Missing newsletters should return appropriate HTTP status codes
+### Output Structure
+
+```
+dist/
+├── .nojekyll
+├── favicon.ico
+├── index.html
+├── styles.css
+└── newsletter/
+    ├── 1/
+    │   ├── index.html
+    │   └── image/
+    │       └── *.png
+    ├── 2/
+    │   ├── index.html
+    │   └── image/
+    │       └── *.png
+    └── ...
+```
 
 ### Newsletter Format
 
-Newsletters are expected to be in this structure:
+Newsletters are expected to be in this structure in the source repository:
 
 ```
 newsletters/
@@ -203,46 +186,18 @@ newsletters/
     ...
 ```
 
-## Common Tasks
-
-### Adding a New Route
-
-1. Import `createRouter` from `@remix-run/fetch-router`
-2. Define routes programmatically in `app/router.ts`
-3. Use `html` template tag from `@remix-run/html-template` to generate HTML
-4. Return responses using `createHtmlResponse` from `@remix-run/response/html`
-5. Export router from `app/router.ts`
-
-### Adding Middleware
-
-Remix 3 middleware packages can be composed:
-
-- `compression-middleware` - Compress responses
-- `logger-middleware` - Log requests/responses
-- `static-middleware` - Serve static files
-- `session-middleware` - Session management
-
-### Fetching Data
-
-- Use GitHub API via native `fetch()` API
-- Cache images using `@remix-run/file-storage`
-- Use `LazyFile` for streaming large files
-- `@remix-run/tar-parser` is available for parsing GitHub tarball archives if needed
-
 ## Notes for AI Agents
 
-1. **Never assume file-based routing** - Remix 3 uses programmatic routing
+1. **Static site generator** - This is NOT a server application. It generates static HTML at build time.
 2. **No component framework** - This project uses plain HTML templates, not JSX/components
 3. **HTML templates** - Use `html` template tag from `@remix-run/html-template` for HTML generation
-4. **Use Web APIs** - Prefer `File`, `Blob`, `ReadableStream` over Node.js equivalents
+4. **Use Web APIs** - Prefer `File`, `Blob`, `Uint8Array` over Node.js-specific equivalents
 5. **Check package names** - All Remix packages are scoped as `@remix-run/*`
-6. **Runtime-first** - Code should work without bundling/compilation
-7. **TypeScript native** - Server code runs directly with Node.js native TypeScript support
-8. **Modular design** - Each Remix package is independent and composable
-9. **Router file** - The router is in `app/router.ts` (not `.tsx` - no JSX)
-10. **No type casting** - Never use TypeScript type assertions (`as`, `as!`, `as?`, `satisfies`). Instead, use proper type guards, type narrowing, or fix the underlying type issues. Type casting bypasses TypeScript's safety and can lead to runtime errors.
+6. **TypeScript native** - Build script runs directly with Node.js native TypeScript support
+7. **Relative paths** - All asset paths in generated HTML are relative for static hosting
+8. **No type casting** - Never use TypeScript type assertions (`as`, `as!`, `as?`, `satisfies`). Instead, use proper type guards, type narrowing, or fix the underlying type issues.
 
 ## References
 
 - [Remix 3 Repository](https://github.com/remix-run/remix)
-- [Remix 3 Philosophy](https://github.com/remix-run/remix#welcome-to-remix-3)
+- [GitHub Pages Documentation](https://docs.github.com/en/pages)

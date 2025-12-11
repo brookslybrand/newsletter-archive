@@ -1,22 +1,11 @@
 import { html, type SafeHtml } from "@remix-run/html-template";
-import { createHtmlResponse } from "@remix-run/response/html";
 
-export function transformImageUrls(
-  htmlContent: string,
-  newsletterNumber: number,
-  useRelativePaths: boolean = false,
-): string {
-  // Transform relative image paths
-  // If useRelativePaths is true, transforms to ./image/filename.png
-  // Otherwise, transforms to /newsletter/:number/image/:filename
+export function transformImageUrls(htmlContent: string): string {
+  // Transform relative image paths to ./image/filename.png
   return htmlContent.replace(
     /src="(\.\/)?([^"/]+\.(jpg|jpeg|png|gif|webp|svg|bmp|ico))"/gi,
-    (match, dotSlash, filename) => {
-      if (useRelativePaths) {
-        return `src="./image/${filename}"`;
-      }
-      // For server routes
-      return `src="/newsletter/${newsletterNumber}/image/${filename}"`;
+    (_match, _dotSlash, filename) => {
+      return `src="./image/${filename}"`;
     },
   );
 }
@@ -66,8 +55,8 @@ export function extractPreview(
 
 export function renderLayoutHtml(
   content: SafeHtml,
-  stylesheetPath: string = "/styles.css",
-  faviconPath: string = "/favicon.ico",
+  stylesheetPath: string = "./styles.css",
+  faviconPath: string = "./favicon.ico",
 ): string {
   let page = html`
     <!DOCTYPE html>
@@ -90,8 +79,8 @@ export function renderLayoutHtml(
 export function renderNewsletterPageHtml(
   content: SafeHtml,
   backHref: string,
-  stylesheetPath: string = "/styles.css",
-  faviconPath: string = "/favicon.ico",
+  stylesheetPath: string = "../../styles.css",
+  faviconPath: string = "../../favicon.ico",
 ): string {
   let page = html`
     <!DOCTYPE html>
@@ -112,49 +101,4 @@ export function renderNewsletterPageHtml(
     </html>
   `;
   return page.toString();
-}
-
-// Server-side versions that return Response objects
-export function renderLayout(content: SafeHtml, init?: ResponseInit): Response {
-  let page = html`
-    <!DOCTYPE html>
-    <html lang="en">
-      <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Remix Newsletter Archive</title>
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="stylesheet" href="/styles.css" />
-      </head>
-      <body>
-        <div class="container">${content}</div>
-      </body>
-    </html>
-  `;
-  return createHtmlResponse(page, init);
-}
-
-export function renderNewsletterPage(
-  content: SafeHtml,
-  backHref: string,
-): Response {
-  let page = html`
-    <!DOCTYPE html>
-    <html lang="en">
-      <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Remix Newsletter Archive</title>
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="stylesheet" href="/styles.css" />
-      </head>
-      <body>
-        <div class="container">
-          <a href="${backHref}" class="back-link">← Back to archive</a>
-          <div class="newsletter-content">${content}</div>
-        </div>
-      </body>
-    </html>
-  `;
-  return createHtmlResponse(page);
 }

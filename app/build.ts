@@ -135,12 +135,7 @@ async function build(): Promise<void> {
 
       let markdown = await fetchNewsletter(newsletter.number);
       let htmlContent = markdownToHtml(markdown);
-      // Use relative paths for images
-      let transformedHtml = transformImageUrls(
-        htmlContent,
-        newsletter.number,
-        true,
-      );
+      let transformedHtml = transformImageUrls(htmlContent);
       let safeHtml = html.raw`${transformedHtml}`;
 
       let newsletterDir = path.join(

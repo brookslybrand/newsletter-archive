@@ -8,42 +8,12 @@ importers:
 
   .:
     dependencies:
-      '@remix-run/compression-middleware':
-        specifier: ^0.1.0
-        version: 0.1.0(@remix-run/fetch-router@0.12.0(@remix-run/headers@0.18.0)(@remix-run/route-pattern@0.15.3)(@remix-run/session@0.4.1))(@remix-run/mime@0.1.0)(@remix-run/response@0.2.0(@remix-run/headers@0.18.0)(@remix-run/html-template@0.3.0)(@remix-run/mime@0.1.0))
-      '@remix-run/fetch-router':
-        specifier: ^0.12.0
-        version: 0.12.0(@remix-run/headers@0.18.0)(@remix-run/route-pattern@0.15.3)(@remix-run/session@0.4.1)
-      '@remix-run/file-storage':
-        specifier: ^0.13.0
-        version: 0.13.0(@remix-run/fs@0.3.0(@remix-run/lazy-file@4.2.0(@remix-run/mime@0.1.0))(@remix-run/mime@0.1.0))(@remix-run/lazy-file@4.2.0(@remix-run/mime@0.1.0))
-      '@remix-run/fs':
-        specifier: ^0.3.0
-        version: 0.3.0(@remix-run/lazy-file@4.2.0(@remix-run/mime@0.1.0))(@remix-run/mime@0.1.0)
-      '@remix-run/headers':
-        specifier: ^0.18.0
-        version: 0.18.0
       '@remix-run/html-template':
         specifier: ^0.3.0
         version: 0.3.0
-      '@remix-run/lazy-file':
-        specifier: ^4.2.0
-        version: 4.2.0(@remix-run/mime@0.1.0)
-      '@remix-run/logger-middleware':
-        specifier: ^0.1.0
-        version: 0.1.0(@remix-run/fetch-router@0.12.0(@remix-run/headers@0.18.0)(@remix-run/route-pattern@0.15.3)(@remix-run/session@0.4.1))
       '@remix-run/mime':
         specifier: ^0.1.0
         version: 0.1.0
-      '@remix-run/node-fetch-server':
-        specifier: ^0.12.0
-        version: 0.12.0
-      '@remix-run/response':
-        specifier: ^0.2.0
-        version: 0.2.0(@remix-run/headers@0.18.0)(@remix-run/html-template@0.3.0)(@remix-run/mime@0.1.0)
-      '@remix-run/static-middleware':
-        specifier: ^0.4.0
-        version: 0.4.0(@remix-run/fetch-router@0.12.0(@remix-run/headers@0.18.0)(@remix-run/route-pattern@0.15.3)(@remix-run/session@0.4.1))(@remix-run/fs@0.3.0(@remix-run/lazy-file@4.2.0(@remix-run/mime@0.1.0))(@remix-run/mime@0.1.0))(@remix-run/html-template@0.3.0)(@remix-run/mime@0.1.0)(@remix-run/response@0.2.0(@remix-run/headers@0.18.0)(@remix-run/html-template@0.3.0)(@remix-run/mime@0.1.0))
       '@remix-run/tar-parser':
         specifier: ^0.7.0
         version: 0.7.0
@@ -112,75 +82,11 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@remix-run/compression-middleware@0.1.0':
-    resolution: {integrity: sha512-EF2VEEsTZw4o8hB39DzaDFmUIhgvUe023qq+fdea/vOmIAgQilDAX6GKfA71m02T/mOFwv8AlIT5ancUL8jYjA==}
-    peerDependencies:
-      '@remix-run/fetch-router': ^0.12.0
-      '@remix-run/mime': ^0.1.0
-      '@remix-run/response': ^0.1.0
-
-  '@remix-run/fetch-router@0.12.0':
-    resolution: {integrity: sha512-BDG/VepZg2ZJ7wav3HDrB9ZJLpzZONHi9ItOkFMcKsrbm5g7jjrxW5Vdijbbebz12pbJQu6VKTwLVXp/LgFusA==}
-    peerDependencies:
-      '@remix-run/headers': ^0.17.2
-      '@remix-run/route-pattern': ^0.15.3
-      '@remix-run/session': ^0.4.0
-
-  '@remix-run/file-storage@0.13.0':
-    resolution: {integrity: sha512-mL00sQhCeF95x61roVeuTAnHYZ0R6lZnoWE1es10+Hef5wPkVGgOVTKIn5+A/5EtQVa8GHiVe7ldKfoq9izgrQ==}
-    peerDependencies:
-      '@remix-run/fs': ^0.1.0
-      '@remix-run/lazy-file': ^4.0.0
-
-  '@remix-run/fs@0.3.0':
-    resolution: {integrity: sha512-gf9OF3fNArNSdk/2m7mh5JLk61ynXz4cAMKgsPDL8eo+o3Ve9j8nir/vv2x9kqmE0FyFlCxKF1+aMITJkJ6Bqg==}
-    peerDependencies:
-      '@remix-run/lazy-file': ^4.2.0
-      '@remix-run/mime': ^0.1.0
-
-  '@remix-run/headers@0.18.0':
-    resolution: {integrity: sha512-5V/doLOF1IBuMhV+USa/ImUzpql4SQ0VBbNKbRHvrwRK59GYGVqtcwpVzgdFb5QEa2vIedq4JdOy7FIesZUpIw==}
-
   '@remix-run/html-template@0.3.0':
     resolution: {integrity: sha512-aAMx68udtIk0fmCpCXHYscVeCDsRVEmEgh4XvtusPr3vkHu3jn4gx5oAxgsPXPdDmmD/d75SYyI0m/F+aLz5iQ==}
 
-  '@remix-run/lazy-file@4.2.0':
-    resolution: {integrity: sha512-gW93kP7j7MSgiAbALc4Cy1d0hG79mj6O5ExMyHyS7bZU7L2hiLZifGI0sKC1rjHR9DFQrNSyPig+KMLyiLk/kg==}
-    peerDependencies:
-      '@remix-run/mime': ^0.1.0
-
-  '@remix-run/logger-middleware@0.1.0':
-    resolution: {integrity: sha512-XEQoUKyBK7jcaPdnWaqNlzRtEr31hRKjGS9T6qCiL/sNp9V8fzVlv+kSBJgZ+RqvOnCRQKV217lh+XTgXQjJ2g==}
-    peerDependencies:
-      '@remix-run/fetch-router': ^0.9.0
-
   '@remix-run/mime@0.1.0':
     resolution: {integrity: sha512-SUuIhuzaFdPPF8hPJ2qneILnP3Nxc96jvuz6QAhXDeqenXsCNUdduF+6J2PILdzme0t3dVZcHARfcgYPTaOWdg==}
-
-  '@remix-run/node-fetch-server@0.12.0':
-    resolution: {integrity: sha512-oeg8w8aJJSuq1fCx85jCkcgTfI6On7sKwWVSO4/OW5AvTBuosAIwnuBd/LYeU/I7lYPOTW2NXhUfyfpyeexs4w==}
-
-  '@remix-run/response@0.2.0':
-    resolution: {integrity: sha512-oo5LA6On7OO2uJxjjYOsvEHvc5MnBdQavZoiuT2a9HiwKRNpc8Y3D85oqHjtJJBNtgg+Ug1JN3H0RILezpAYTg==}
-    peerDependencies:
-      '@remix-run/headers': ^0.18.0
-      '@remix-run/html-template': ^0.3.0
-      '@remix-run/mime': ^0.1.0
-
-  '@remix-run/route-pattern@0.15.3':
-    resolution: {integrity: sha512-7s4Oy9q6Oz9Vfwg0iZscpmYVASNG9fLqbCa+YY0+SWKksDpvCRiW46xp3S3zEvT7zEP7G55FKA+JdrqqK2AOXw==}
-
-  '@remix-run/session@0.4.1':
-    resolution: {integrity: sha512-Bm6aKYgutb/raHZ3laloz8g/Qu7f3CeK3o4gUVDMxtEiAdWCzJamwHoTpGOc5+g1Kuy7z85v4M6nGrF06MFDSg==}
-
-  '@remix-run/static-middleware@0.4.0':
-    resolution: {integrity: sha512-vLhi7+CJ7OuPu4tM3DtAo0lir0eze5702mhP5zdTHdxn213tEpDcjhb+jpOpiCIYTvWE+sB4G3rUNGPiY8eeAg==}
-    peerDependencies:
-      '@remix-run/fetch-router': ^0.12.0
-      '@remix-run/fs': ^0.2.0
-      '@remix-run/html-template': ^0.3.0
-      '@remix-run/mime': ^0.1.0
-      '@remix-run/response': ^0.2.0
 
   '@remix-run/tar-parser@0.7.0':
     resolution: {integrity: sha512-PW8JxEUzaGcnqxC5hBI8L9lK/Qz3oad6IGKZ+NExI3L7urVJUux+yCBrsme79DMBgS6hL+lgd/5LPFA5fSwF9A==}
@@ -468,61 +374,9 @@ snapshots:
   '@oxlint/win32-x64@0.15.15':
     optional: true
 
-  '@remix-run/compression-middleware@0.1.0(@remix-run/fetch-router@0.12.0(@remix-run/headers@0.18.0)(@remix-run/route-pattern@0.15.3)(@remix-run/session@0.4.1))(@remix-run/mime@0.1.0)(@remix-run/response@0.2.0(@remix-run/headers@0.18.0)(@remix-run/html-template@0.3.0)(@remix-run/mime@0.1.0))':
-    dependencies:
-      '@remix-run/fetch-router': 0.12.0(@remix-run/headers@0.18.0)(@remix-run/route-pattern@0.15.3)(@remix-run/session@0.4.1)
-      '@remix-run/mime': 0.1.0
-      '@remix-run/response': 0.2.0(@remix-run/headers@0.18.0)(@remix-run/html-template@0.3.0)(@remix-run/mime@0.1.0)
-
-  '@remix-run/fetch-router@0.12.0(@remix-run/headers@0.18.0)(@remix-run/route-pattern@0.15.3)(@remix-run/session@0.4.1)':
-    dependencies:
-      '@remix-run/headers': 0.18.0
-      '@remix-run/route-pattern': 0.15.3
-      '@remix-run/session': 0.4.1
-
-  '@remix-run/file-storage@0.13.0(@remix-run/fs@0.3.0(@remix-run/lazy-file@4.2.0(@remix-run/mime@0.1.0))(@remix-run/mime@0.1.0))(@remix-run/lazy-file@4.2.0(@remix-run/mime@0.1.0))':
-    dependencies:
-      '@remix-run/fs': 0.3.0(@remix-run/lazy-file@4.2.0(@remix-run/mime@0.1.0))(@remix-run/mime@0.1.0)
-      '@remix-run/lazy-file': 4.2.0(@remix-run/mime@0.1.0)
-
-  '@remix-run/fs@0.3.0(@remix-run/lazy-file@4.2.0(@remix-run/mime@0.1.0))(@remix-run/mime@0.1.0)':
-    dependencies:
-      '@remix-run/lazy-file': 4.2.0(@remix-run/mime@0.1.0)
-      '@remix-run/mime': 0.1.0
-
-  '@remix-run/headers@0.18.0': {}
-
   '@remix-run/html-template@0.3.0': {}
 
-  '@remix-run/lazy-file@4.2.0(@remix-run/mime@0.1.0)':
-    dependencies:
-      '@remix-run/mime': 0.1.0
-
-  '@remix-run/logger-middleware@0.1.0(@remix-run/fetch-router@0.12.0(@remix-run/headers@0.18.0)(@remix-run/route-pattern@0.15.3)(@remix-run/session@0.4.1))':
-    dependencies:
-      '@remix-run/fetch-router': 0.12.0(@remix-run/headers@0.18.0)(@remix-run/route-pattern@0.15.3)(@remix-run/session@0.4.1)
-
   '@remix-run/mime@0.1.0': {}
-
-  '@remix-run/node-fetch-server@0.12.0': {}
-
-  '@remix-run/response@0.2.0(@remix-run/headers@0.18.0)(@remix-run/html-template@0.3.0)(@remix-run/mime@0.1.0)':
-    dependencies:
-      '@remix-run/headers': 0.18.0
-      '@remix-run/html-template': 0.3.0
-      '@remix-run/mime': 0.1.0
-
-  '@remix-run/route-pattern@0.15.3': {}
-
-  '@remix-run/session@0.4.1': {}
-
-  '@remix-run/static-middleware@0.4.0(@remix-run/fetch-router@0.12.0(@remix-run/headers@0.18.0)(@remix-run/route-pattern@0.15.3)(@remix-run/session@0.4.1))(@remix-run/fs@0.3.0(@remix-run/lazy-file@4.2.0(@remix-run/mime@0.1.0))(@remix-run/mime@0.1.0))(@remix-run/html-template@0.3.0)(@remix-run/mime@0.1.0)(@remix-run/response@0.2.0(@remix-run/headers@0.18.0)(@remix-run/html-template@0.3.0)(@remix-run/mime@0.1.0))':
-    dependencies:
-      '@remix-run/fetch-router': 0.12.0(@remix-run/headers@0.18.0)(@remix-run/route-pattern@0.15.3)(@remix-run/session@0.4.1)
-      '@remix-run/fs': 0.3.0(@remix-run/lazy-file@4.2.0(@remix-run/mime@0.1.0))(@remix-run/mime@0.1.0)
-      '@remix-run/html-template': 0.3.0
-      '@remix-run/mime': 0.1.0
-      '@remix-run/response': 0.2.0(@remix-run/headers@0.18.0)(@remix-run/html-template@0.3.0)(@remix-run/mime@0.1.0)
 
   '@remix-run/tar-parser@0.7.0': {}
 

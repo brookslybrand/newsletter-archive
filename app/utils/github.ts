@@ -1,14 +1,6 @@
-import * as os from "node:os";
-import * as path from "node:path";
 import * as zlib from "node:zlib";
 import { parseTar, type TarEntry } from "@remix-run/tar-parser";
 import { detectMimeType } from "@remix-run/mime";
-import { createFsFileStorage } from "@remix-run/file-storage/fs";
-import { cache } from "./cache.ts";
-
-let cacheDir = path.join(os.tmpdir(), "newsletter-archive-cache");
-let tarballCache = createFsFileStorage(cacheDir);
-let isDev = process.env.NODE_ENV === "development";
 
 function getConfig() {
   let githubRepo = process.env.GITHUB_REPO || "remix-run/newsletter";
@@ -26,10 +18,6 @@ function getConfig() {
     owner,
     repo,
   };
-}
-
-function getTarballCacheKey(owner: string, repo: string, ref: string): string {
-  return `${owner}-${repo}-${ref}.tar`;
 }
 
 export interface NewsletterMetadata {
@@ -60,12 +48,11 @@ function gunzip(data: Uint8Array): Promise<Uint8Array> {
   });
 }
 
-async function fetchFreshTarball(
+async function fetchTarball(
   owner: string,
   repo: string,
   ref: string,
   token: string,
-  cacheKey: string,
 ): Promise<Uint8Array> {
   let tarballUrl = `https://api.github.com/repos/${owner}/${repo}/tarball/${ref}`;
   let response = await fetch(tarballUrl, {
@@ -82,60 +69,7 @@ async function fetchFreshTarball(
   }
 
   let compressedData = new Uint8Array(await response.arrayBuffer());
-  let decompressed = await gunzip(compressedData);
-
-  let arrayBuffer = new ArrayBuffer(decompressed.byteLength);
-  new Uint8Array(arrayBuffer).set(decompressed);
-
-  let file = new File([arrayBuffer], cacheKey, {
-    type: "application/x-tar",
-  });
-  await tarballCache.set(cacheKey, file);
-
-  return decompressed;
-}
-
-let tarballRevalidations = new Map<string, Promise<void>>();
-
-async function fetchTarball(
-  owner: string,
-  repo: string,
-  ref: string,
-  token: string,
-): Promise<Uint8Array> {
-  let cacheKey = getTarballCacheKey(owner, repo, ref);
-
-  if (isDev) {
-    return fetchFreshTarball(owner, repo, ref, token, cacheKey);
-  }
-
-  let cached = await tarballCache.get(cacheKey);
-
-  if (cached) {
-    let age = Date.now() - cached.lastModified;
-
-    if (age < cache.TTL_MS) {
-      return new Uint8Array(await cached.arrayBuffer());
-    }
-
-    if (!tarballRevalidations.has(cacheKey)) {
-      let revalidation = (async () => {
-        try {
-          await fetchFreshTarball(owner, repo, ref, token, cacheKey);
-        } catch (error) {
-          console.error("Background tarball revalidation failed:", error);
-        } finally {
-          tarballRevalidations.delete(cacheKey);
-        }
-      })();
-
-      tarballRevalidations.set(cacheKey, revalidation);
-    }
-
-    return new Uint8Array(await cached.arrayBuffer());
-  }
-
-  return fetchFreshTarball(owner, repo, ref, token, cacheKey);
+  return gunzip(compressedData);
 }
 
 async function parseTarball(data: Uint8Array): Promise<{
@@ -222,10 +156,8 @@ function extractNewsletterMetadata(
   return newsletters;
 }
 
+// In-memory cache for the duration of the build
 let repositoryContentsCache: RepositoryContents | null = null;
-let repositoryContentsCacheKey: string | null = null;
-let repositoryContentsCacheTime: number | null = null;
-let repositoryRevalidations = new Map<string, Promise<void>>();
 
 async function buildRepositoryContents(
   owner: string,
@@ -249,55 +181,24 @@ async function buildRepositoryContents(
 export async function fetchRepositoryContents(
   ref: string = "main",
 ): Promise<RepositoryContents> {
+  // Return cached contents if already fetched
+  if (repositoryContentsCache) {
+    return repositoryContentsCache;
+  }
+
   let { token, owner, repo } = getConfig();
 
   if (!token) {
     throw new Error("GITHUB_TOKEN environment variable is required");
   }
 
-  let cacheKey = getTarballCacheKey(owner, repo, ref);
-
-  if (isDev) {
-    return buildRepositoryContents(owner, repo, ref, token);
-  }
-
-  if (
-    repositoryContentsCache &&
-    repositoryContentsCacheKey === cacheKey &&
-    repositoryContentsCacheTime !== null
-  ) {
-    let age = Date.now() - repositoryContentsCacheTime;
-
-    if (age < cache.TTL_MS) {
-      return repositoryContentsCache;
-    }
-
-    if (!repositoryRevalidations.has(cacheKey)) {
-      let revalidation = (async () => {
-        try {
-          let fresh = await buildRepositoryContents(owner, repo, ref, token);
-          repositoryContentsCache = fresh;
-          repositoryContentsCacheKey = cacheKey;
-          repositoryContentsCacheTime = Date.now();
-        } catch (error) {
-          console.error("Background repository revalidation failed:", error);
-        } finally {
-          repositoryRevalidations.delete(cacheKey);
-        }
-      })();
-
-      repositoryRevalidations.set(cacheKey, revalidation);
-    }
-
-    return repositoryContentsCache;
-  }
-
-  let fresh = await buildRepositoryContents(owner, repo, ref, token);
-  repositoryContentsCache = fresh;
-  repositoryContentsCacheKey = cacheKey;
-  repositoryContentsCacheTime = Date.now();
-
-  return fresh;
+  repositoryContentsCache = await buildRepositoryContents(
+    owner,
+    repo,
+    ref,
+    token,
+  );
+  return repositoryContentsCache;
 }
 
 export async function listNewsletters(): Promise<NewsletterMetadata[]> {
