@@ -45,7 +45,8 @@ jobs:
       - name: 🔨 Build static site
         run: pnpm build
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # PAT with access to remix-run/newsletter repository
+          GITHUB_TOKEN: ${{ secrets.NEWSLETTER_GITHUB_TOKEN }}
 
       - name: 📤 Upload artifact
         uses: actions/upload-pages-artifact@v3
